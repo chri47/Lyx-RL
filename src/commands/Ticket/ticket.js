@@ -125,39 +125,41 @@ export default {
             }
 }
 
-    const panelChannel = interaction.options.getChannel('panel_channel');
-    const categoryChannel = interaction.options.getChannel('category');
-    const staffRole = interaction.options.getRole('staff_role');
-    const panelMessage = interaction.options.getString('panel_message') || 'Click the button below to create a ticket!';
-    const createTicketButtonLabel = interaction.options.getString('button_label') || 'Create Ticket';
-    const maxTicketsPerUser = interaction.options.getInteger('max_tickets_per_user') || 5;
-    const closeOnLeave = interaction.options.getBoolean('close_on_leave')?? true;
+        const member = interaction.member;
+        const channel = interaction.channel;
 
-    try {
-        const customEmbed = {
-            title: 'Support Ticket System',
-            description: 'Welcome to our premium support system! Select the category that best fits your issue below and our team will get back to you as soon as possible.',
-            color: 0x2b2d31,
-            image: { url: 'https://i.imgur.com/4M34hi2.png' }
-        };
+        try {
+            const customEmbed = {
+                color: 0x2b2d31,
+                title: 'Ticket di ' + member.user.username,
+                description: 'Grazie per aver aperto un ticket. Lo staff ti risponderà a breve.',
+                footer: { text: 'LYK Community' },
+                timestamp: new Date().toISOString()
+            };
 
-        const customButtons = {
-            type: 1,
-            components: [
-                { type: 2, custom_id: 'ticket_questions', label: 'Questions', style: 2, emoji: { name: ':question:' } },
-                { type: 2, custom_id: 'ticket_product', label: 'Product Assistance', style: 2, emoji: { name: ':package:' } },
-                { type: 2, custom_id: 'ticket_order', label: 'Order Issues', style: 2, emoji: { name: ':shopping_cart:' } },
-                { type: 2, custom_id: 'ticket_manual', label: 'Manual Delivery', style: 2, emoji: { name: ':mailbox:' } }
-            ]
-        };
+            const customButtons = {
+                type: 1,
+                components: [
+                    {
+                        type: 2,
+                        style: 4,
+                        label: 'Chiudi Ticket',
+                        custom_id: 'close_ticket',
+                        emoji: { name: ':lock:' }
+                    }
+                ]
+            };
 
-        const sentPanel = await panelChannel.send({
-            embeds: [customEmbed],
-            components: [customButtons]
-        });
+            const sentPanel = await channel.send({ embeds: [customEmbed], components: [customButtons] });
+        } catch (error) {
+            console.error('Errore invio pannello ticket:', error);
+            return interaction.reply({ content: 'Errore durante la creazione del ticket.', ephemeral: true });
+        }
     }
-    if (client.db && interaction.guildId) {                if (client.db && interaction.guildId) {
-                    const currentConfig = existingConfig;
+
+    if (client.db && typeof client.db.saveTicket === 'function') {
+        client.db.saveTicket(interaction.guild.id, channel.id, member.id);
+    }
                     currentConfig.ticketCategoryId = categoryChannel ? categoryChannel.id : null;
                     currentConfig.ticketClosedCategoryId = closedCategoryChannel ? closedCategoryChannel.id : null;
                     currentConfig.ticketStaffRoleId = staffRole ? staffRole.id : null;
