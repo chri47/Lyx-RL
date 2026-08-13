@@ -123,42 +123,40 @@ export default {
             if (existingConfig?.ticketPanelChannelId) {
                 return await replyUserError(interaction, { type: ErrorTypes.UNKNOWN, message: `This server already has a ticket system set up (panel in <#${existingConfig.ticketPanelChannelId}>).\n\nOnly one ticket system is supported per server. Use \`/ticket dashboard\` to edit or update the existing setup, or select **Delete System** from the dashboard to remove it and start fresh.` });
             }
+}
 
-            const panelChannel =
-                interaction.options.getChannel("panel_channel");
-            const categoryChannel = interaction.options.getChannel("category");
-            const closedCategoryChannel = interaction.options.getChannel("closed_category");
-            const staffRole = interaction.options.getRole("staff_role");
-const panelMessage = interaction.options.getString("panel_message") || "Click the button below to create a support ticket.";
-            const buttonLabel =
-                interaction.options.getString("button_label") ||
-"Create Ticket";
-            const maxTicketsPerUser = interaction.options.getInteger("max_tickets_per_user") || 3;
-const dmOnClose = interaction.options.getBoolean("dm_on_close") !== false;
+    const panelChannel = interaction.options.getChannel('panel_channel');
+    const categoryChannel = interaction.options.getChannel('category');
+    const staffRole = interaction.options.getRole('staff_role');
+    const panelMessage = interaction.options.getString('panel_message') || 'Click the button below to create a ticket!';
+    const createTicketButtonLabel = interaction.options.getString('button_label') || 'Create Ticket';
+    const maxTicketsPerUser = interaction.options.getInteger('max_tickets_per_user') || 5;
+    const closeOnLeave = interaction.options.getBoolean('close_on_leave')?? true;
 
-      const customEmbed = {
-    title: 'Support Ticket System',
-    description: 'Welcome to our premium support system.\nSelect the category that best fits your issue below to open a ticket.\nOur team will get back to you as soon as possible.',
-    color: 2829617,
-    image: { url: 'https://i.imgur.com/4M34hi2.png' }
-};
+    try {
+        const customEmbed = {
+            title: 'Support Ticket System',
+            description: 'Welcome to our premium support system! Select the category that best fits your issue below and our team will get back to you as soon as possible.',
+            color: 0x2b2d31,
+            image: { url: 'https://i.imgur.com/4M34hi2.png' }
+        };
 
-const customButtons = {
-    type: 1,
-    components: [
-        { type: 2, custom_id: 'ticket_questions', label: 'Questions', style: 2 },
-        { type: 2, custom_id: 'ticket_general', label: 'General Support', style: 2 },
-        { type: 2, custom_id: 'ticket_product', label: 'Product Not Received', style: 2 },
-        { type: 2, custom_id: 'ticket_manual', label: 'Manual Delivery', style: 2 }
-    ]
-};
+        const customButtons = {
+            type: 1,
+            components: [
+                { type: 2, custom_id: 'ticket_questions', label: 'Questions', style: 2, emoji: { name: ':question:' } },
+                { type: 2, custom_id: 'ticket_product', label: 'Product Assistance', style: 2, emoji: { name: ':package:' } },
+                { type: 2, custom_id: 'ticket_order', label: 'Order Issues', style: 2, emoji: { name: ':shopping_cart:' } },
+                { type: 2, custom_id: 'ticket_manual', label: 'Manual Delivery', style: 2, emoji: { name: ':mailbox:' } }
+            ]
+        };
 
-const sentPanel = await panelChannel.send({ embeds: [customEmbed], components: [customButtons] })     
-                    embeds: [setupEmbed],
-                    components: [ticketButton],
-                });
-
-                if (client.db && interaction.guildId) {
+        const sentPanel = await panelChannel.send({
+            embeds: [customEmbed],
+            components: [customButtons]
+        });
+    }
+    if (client.db && interaction.guildId) {                if (client.db && interaction.guildId) {
                     const currentConfig = existingConfig;
                     currentConfig.ticketCategoryId = categoryChannel ? categoryChannel.id : null;
                     currentConfig.ticketClosedCategoryId = closedCategoryChannel ? closedCategoryChannel.id : null;
