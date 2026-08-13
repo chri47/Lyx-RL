@@ -429,7 +429,37 @@ export default {
             );
           }
 
-          try {
+          try { // GESTIONE PULSANTI TICKET - INIZIO
+if (interaction.isButton()) {
+    const { ChannelType, PermissionFlagsBits } = require('discord.js');
+    
+    if (interaction.customId === 'ticket_general' || 
+        interaction.customId === 'ticket_product' || 
+        interaction.customId === 'ticket_payment') {
+        
+        let category = "General Support";
+        if (interaction.customId === 'ticket_product') category = "Product Not Received";
+        if (interaction.customId === 'ticket_payment') category = "Payment Delivery";
+        
+        const channel = await interaction.guild.channels.create({
+            name: `ticket-${interaction.user.username}`,
+            type: ChannelType.GuildText,
+            permissionOverwrites: [
+                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+            ],
+        });
+        
+        await interaction.reply({ 
+            content: `✅ Ticket creato: ${channel} - **${category}**`, 
+            ephemeral: true 
+        });
+        
+        await channel.send(`Ciao ${interaction.user}! Hai aperto un ticket per **${category}**.\nDescrivi il problema e lo staff ti risponderà.`);
+        return; // IMPORTANTE: ferma qui l'esecuzione
+    }
+}
+// GESTIONE PULSANTI TICKET - FINE
             await modal.execute(interaction, client, args);
           } catch (error) {
             await handleInteractionError(interaction, error, withTraceContext({
