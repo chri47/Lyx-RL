@@ -177,24 +177,35 @@ function buildDashboardEmbed(config, guild, panelStatus = null, ticketStats = nu
 function buildSelectMenu(guildId) {
     return new StringSelectMenuBuilder()
         .setCustomId(`ticket_config_${guildId}`)
-        .setPlaceholder('Select a setting to configure...')
-        .addOptions(
-            new StringSelectMenuOptionBuilder()
-                .setLabel('Edit Panel Message')
-                .setDescription('Change the message displayed on the ticket creation panel')
-                .setValue('panel_message')
-                .setEmoji('📝'),
-            new StringSelectMenuOptionBuilder()
-                .setLabel('Edit Button Label')
-                .setDescription('Change the label on the Create Ticket button')
-                .setValue('button_label')
-                .setEmoji('🏷️'),
-            new StringSelectMenuOptionBuilder()
-                .setLabel('Change Open Tickets Category')
-                .setDescription('Category where new tickets are created')
-                .setValue('open_category')
-                .setEmoji('📁'),
-            new StringSelectMenuOptionBuilder()
+function buildPanelEmbed(config) {
+    return createEmbed({
+        title: "Support Ticket System",
+        description: "Welcome to **LYX RL SERVICES** premium support.\n\n:ticket: **General Support** - Help with questions\n:package: **Product Not Received** - Missing items\n:moneybag: **Payment Delivery** - Payment issues\n\nSelect a category below to open your ticket.",
+        color: "#2f3136",
+        image: "https://cdn.discordapp.com/attachments/1530941725256716331/1537551597956112384/04B73BDD-D459-463E-9589-1D4678F821CF.mov?ex=6a7f7403&is=6a7e2283&hm=f75d083971aeb0fd1157f92e17fc5c82c5e0f41f3ad978ae2fd241cd34e4b0e5&",
+        footer: { text: "LYX RL SERVICES" }
+    })
+}
+
+function buildPanelButtons(config) {
+    return new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId("ticket_general")
+            .setLabel("General Support")
+            .setEmoji(":ticket:")
+            .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+            .setCustomId("ticket_product")
+            .setLabel("Product Not Received")
+            .setEmoji(":package:")
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+            .setCustomId("ticket_payment")
+            .setLabel("Payment Delivery")
+            .setEmoji(":moneybag:")
+            .setStyle(ButtonStyle.Success)
+    )
+} 
                 .setLabel('Change Closed Tickets Category')
                 .setDescription('Category where closed tickets are moved')
                 .setValue('closed_category')
