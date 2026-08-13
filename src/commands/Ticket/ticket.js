@@ -136,22 +136,24 @@ const panelMessage = interaction.options.getString("panel_message") || "Click th
             const maxTicketsPerUser = interaction.options.getInteger("max_tickets_per_user") || 3;
 const dmOnClose = interaction.options.getBoolean("dm_on_close") !== false;
 
-            const setupEmbed = createEmbed({ 
-                title: "Support Tickets", 
-description: panelMessage,
-                color: getColor('info')
-            });
+      const customEmbed = {
+    title: 'Support Ticket System',
+    description: 'Welcome to our premium support system.\nSelect the category that best fits your issue below to open a ticket.\nOur team will get back to you as soon as possible.',
+    color: 2829617,
+    image: { url: 'https://i.imgur.com/4M34hi2.png' }
+};
 
-            const ticketButton = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId("create_ticket")
-.setLabel(buttonLabel)
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji("📩"),
-            );
+const customButtons = {
+    type: 1,
+    components: [
+        { type: 2, custom_id: 'ticket_questions', label: 'Questions', style: 2 },
+        { type: 2, custom_id: 'ticket_general', label: 'General Support', style: 2 },
+        { type: 2, custom_id: 'ticket_product', label: 'Product Not Received', style: 2 },
+        { type: 2, custom_id: 'ticket_manual', label: 'Manual Delivery', style: 2 }
+    ]
+};
 
-            try {
-                const sentPanel = await panelChannel.send({
+const sentPanel = await panelChannel.send({ embeds: [customEmbed], components: [customButtons] })     
                     embeds: [setupEmbed],
                     components: [ticketButton],
                 });
