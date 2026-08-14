@@ -380,10 +380,10 @@ client.on('messageCreate', async message => {
         if (command === 'setupstock' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const embed = new EmbedBuilder()
 .setTitle('📦 LYX RL PREMIUM STOCK')
-.setDescription('**Prodotti Disponibili Ora. Ma molti altri prodotti sul sito**\n\n🎮 **Spotify Premium** - €5 Lifetime | Stock: 0\n📺 **Netflix ** - €3.00 Lifetime | Stock: 50\n🎬 **Disney+** - €3.00 Lifetime | Stock: 1500\n🎥 **YOUTUBE LIFETIME** - €3,50 Lifetime | Stock: 70\n\n✅ **Consegna Istantanea**\n🔒 **Garanzia Lifetime**\n💳 **Pagamenti: LTC/PayPal**')
+.setDescription('*Prodotti Disponibili Ora. Ma molti altri prodotti sul sito*\n\n🎮 *Spotify Premium* - €5 Lifetime | Stock: 0\n📺 *Netflix * - €3.00 Lifetime | Stock: 50\n🎬 *Disney+* - €3.00 Lifetime | Stock: 1500\n🎥 *YOUTUBE LIFETIME* - €3,50 Lifetime | Stock: 70\n\n✅ *Consegna Istantanea*\n🔒 *Garanzia Lifetime*\n💳 *Pagamenti: LTC/PayPal*')
 .setImage(BANNER_URL)
 .setColor(LYX_RED)
-.setFooter({ text: 'LYX RL • Premium Stock', iconURL: LOGO_URL });
+.setFooter({ text: '*LYX RL • Premium Stock*', iconURL: LOGO_URL });
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setLabel('ACQUISTA ORA').setStyle(ButtonStyle.Link).setURL(WEBSITE_URL).setEmoji('🛒')
