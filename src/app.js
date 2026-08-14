@@ -1,358 +1,327 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionsBitField } = require('discord.js');
-const express = require('express');
+const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, PermissionFlagsBits, ChannelType, AttachmentBuilder, SlashCommandBuilder, Routes, REST } = require('discord.js');
+const { createCanvas, loadImage } = require('canvas');
+
+// CONFIG - CAMBIA QUESTI ID CON I TUOI
+const CONFIG = {
+    TICKET_CATEGORY: '1530144246055829626', // ID della categoria TICKETS
+    STAFF_ROLE: '1530144125599612978', // ID ruolo staff
+    RULES_CHANNEL: '1537664486033596446', // ID canale #rules
+    BANNER_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428' // CAMBIA CON IL TUO BANNER LYX
+};
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ]
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences // Per contare online
+    ],
+    partials: [Partials.Channel]
 });
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('LYX RL Bot Online'));
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+client.once('ready', async () => {
+    console.log(`✅ Bot online come ${client.user.tag}`);
 
-// CONFIG - I TUOI DATI INSERITI
-const CONFIG = {
-    TICKET_CATEGORY: '1530144246055829626',
-    STAFF_ROLE: '1530144125599612978',
-    WEBSITE_URL: 'https://lyxrlservices.mysellauth.com/',
-    BANNER_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428', // BANNER ROSSO PERMANENTE
-    LOGO_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428'
-};
+    // Registra slash commands
+    const commands = [
+        new SlashCommandBuilder().setName('ping').setDescription('Controlla se il bot è online')
+    ];
 
-// TRADUZIONI TICKET
-const LANG = {
-    it: {
-        welcome: 'Ciao {user}, benvenuto nel supporto LYX RL.\n\n> Seleziona il motivo del ticket dal menu qui sotto.',
-        close: 'Chiudi Ticket',
-        selectReason: '📋 Seleziona il motivo del ticket',
-        reasons: { support: 'Supporto Generale', replace: 'Sostituzione Account', notdelivered: 'Ordine Non Ricevuto', other: 'Altro' },
-        ticketCreated: '✅ Ticket creato: {channel}',
-        alreadyOpen: '❌ Hai già un ticket aperto: {channel}'
-    },
-    en: {
-        welcome: 'Hello {user}, welcome to LYX RL support.\n\n> Select the reason for your ticket from the menu below.',
-        close: 'Close Ticket',
-        selectReason: '📋 Select ticket reason',
-        reasons: { support: 'General Support', replace: 'Account Replacement', notdelivered: 'Order Not Received', other: 'Other' },
-        ticketCreated: '✅ Ticket created: {channel}',
-        alreadyOpen: '❌ You already have an open ticket: {channel}'
-    },
-    es: {
-        welcome: 'Hola {user}, bienvenido al soporte de LYX RL.\n\n> Selecciona el motivo del ticket en el menú de abajo.',
-        close: 'Cerrar Ticket',
-        selectReason: '📋 Selecciona el motivo del ticket',
-        reasons: { support: 'Soporte General', replace: 'Reemplazo de Cuenta', notdelivered: 'Pedido No Recibido', other: 'Otro' },
-        ticketCreated: '✅ Ticket creado: {channel}',
-        alreadyOpen: '❌ Ya tienes un ticket abierto: {channel}'
-    }
-};
-
-client.once('ready', () => {
-    console.log(`✅ ${client.user.tag} è online!`);
-    client.user.setActivity('LYX RL Premium', { type: 3 });
+    const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+    await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
+    console.log('✅ Slash commands registrati');
 });
 
-// COMANDI SETUP
+// ===== WELCOME SYSTEM CON CANVAS =====
+client.on('guildMemberAdd', async member => {
+    const welcomeChannel = member.guild.channels.cache.find(ch => ch.name === '📊・welcome' || ch.name === 'benvenuto');
+    if (!welcomeChannel) return;
+
+    const canvas = createCanvas(1024, 500);
+    const ctx = canvas.getContext('2d');
+
+    // Background gradiente LYX
+    const gradient = ctx.createLinearGradient(0, 0, 1024, 500);
+    gradient.addColorStop(0, '#8B0000');
+    gradient.addColorStop(1, '#4B0082');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 1024, 500);
+
+    // Banner
+    try {
+        const banner = await loadImage(CONFIG.BANNER_URL);
+        ctx.drawImage(banner, 0, 0, 1024, 200);
+    } catch (e) {}
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(0, 0, 1024, 500);
+
+    // Logo LYX
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 80px Arial';
+    ctx.fillText('LYX', 50, 450);
+
+    // Testo
+    ctx.font = 'bold 60px Arial';
+    ctx.fillText('Welcome', 250, 320);
+
+    ctx.font = 'bold 45px Arial';
+    ctx.fillStyle = '#FF0000';
+    ctx.fillText(`@${member.user.username}`, 250, 380);
+
+    ctx.font = '25px Arial';
+    ctx.fillStyle = '#CCCCCC';
+    ctx.fillText('We\'re happy to have you in the community.', 250, 420);
+
+    // Member count
+    ctx.fillStyle = '#2B2D31';
+    ctx.fillRect(250, 440, 200, 40);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`Member #${member.guild.memberCount}`, 260, 465);
+
+    ctx.fillStyle = '#2B2D31';
+    ctx.fillRect(470, 440, 250, 40);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('LYX RL Services', 480, 465);
+
+    // Avatar
+    const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 256 }));
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(850, 250, 120, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(avatar, 730, 130, 240, 240);
+    ctx.restore();
+
+    ctx.strokeStyle = '#FF0000';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(850, 250, 120, 0, Math.PI * 2, true);
+    ctx.stroke();
+
+    const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome.png' });
+
+    const welcomeEmbed = new EmbedBuilder()
+       .setColor(0xFF0000)
+       .setDescription(`👋 Welcome to the community!\n\nHello ${member}, welcome to **LYX RL** 🎮\nYou are our member **#${member.guild.memberCount}**\n\nPlease check <#${CONFIG.RULES_CHANNEL}> and enjoy your stay!`)
+       .setImage('attachment://welcome.png')
+       .setFooter({ text: 'LYX RL Services • Welcome System' })
+       .setTimestamp();
+
+    await welcomeChannel.send({ embeds: [welcomeEmbed], files: [attachment] });
+});
+
+// ===== COMANDI MESSAGGIO =====
 client.on('messageCreate', async message => {
-    if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+    if (message.author.bot) return;
 
-    // 1. SETUP TICKET
+    //!setupticket
     if (message.content === '!setupticket') {
+        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+
         const embed = new EmbedBuilder()
-     .setColor('#FF0000')
-     .setTitle('🎫 LYX RL Support System')
-     .setDescription('**Benvenuto nel supporto ufficiale LYX RL**\n\n> Per aprire un ticket di assistenza clicca il pulsante qui sotto.\n> Seleziona la tua lingua preferita per continuare.\n\n`⚠️` Apri un ticket solo se hai problemi con ordini o prodotti.')
-     .setImage(CONFIG.BANNER_URL)
-     .setFooter({ text: 'LYX RL • Premium Support', iconURL: CONFIG.LOGO_URL });
+           .setTitle('🎫 LYX RL - Support Tickets')
+           .setDescription('**Select your language to open a ticket**\n\nOur staff will assist you as soon as possible.')
+           .setColor(0xFF0000)
+           .setImage(CONFIG.BANNER_URL);
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-       .setCustomId('open_ticket')
-       .setLabel('Apri Ticket')
-       .setEmoji('🎫')
-       .setStyle(ButtonStyle.Danger)
+            new StringSelectMenuBuilder()
+               .setCustomId('ticket_language')
+               .setPlaceholder('🌐 Select Language')
+               .addOptions([
+                    { label: 'English', value: 'en', emoji: '🇬🇧' },
+                    { label: 'Italiano', value: 'it', emoji: '🇮🇹' },
+                    { label: 'Español', value: 'es', emoji: '🇪🇸' }
+                ])
         );
+
         await message.channel.send({ embeds: [embed], components: [row] });
         await message.delete();
     }
 
-    // 2. SETUP STOCK
-    if (message.content === '!setupstock') {
-        const embed = new EmbedBuilder()
-     .setColor('#FF0000')
-     .setTitle('🛒 LYX RL Premium Stock')
-     .setDescription('**Seleziona un prodotto per acquistare**\n\n> Tutti i prodotti sono Lifetime Warranty\n> Consegna instantanea dopo il pagamento')
-     .addFields(
-                { name: '🎵 Spotify Premium', value: '`€5` Lifetime | Stock: `∞`', inline: true },
-                { name: '🎬 Netflix 4K', value: '`€3` Lifetime | Stock: `∞`', inline: true },
-                { name: '🏰 Disney+ 4K', value: '`€0.70` Lifetime | Stock: `∞`', inline: true }
-            )
-     .setImage(CONFIG.BANNER_URL)
-     .setFooter({ text: 'LYX RL • Premium Products', iconURL: CONFIG.LOGO_URL });
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-       .setCustomId('buy_product')
-       .setLabel('Acquista Ora')
-       .setEmoji('🛒')
-       .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-       .setLabel('Website')
-       .setEmoji('🌐')
-       .setStyle(ButtonStyle.Link)
-       .setURL(CONFIG.WEBSITE_URL)
-        );
-        await message.channel.send({ embeds: [embed], components: [row] });
-        await message.delete();
-    }
-
-    // 3. SETUP WEBSITE
-    if (message.content === '!setupwebsite') {
-        const embed = new EmbedBuilder()
-     .setColor('#FF0000')
-     .setTitle('🌐 LYX RL Official Website')
-     .setDescription('**Visita il nostro sito ufficiale per:**\n\n> `🛍️` Catalogo completo prodotti\n> `💳` Pagamenti automatici\n> `📦` Consegna istantanea\n> `🎁` Sconti esclusivi')
-     .setImage(CONFIG.BANNER_URL)
-     .setFooter({ text: 'LYX RL • Official Store', iconURL: CONFIG.LOGO_URL });
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-       .setLabel('Vai al Sito')
-       .setEmoji('🌐')
-       .setStyle(ButtonStyle.Link)
-       .setURL(CONFIG.WEBSITE_URL)
-        );
-        await message.channel.send({ embeds: [embed], components: [row] });
-        await message.delete();
-    }
-
-    // 4. SETUP RULES
-    if (message.content === '!setuprules') {
-        const embed = new EmbedBuilder()
-     .setColor('#FF0000')
-     .setTitle('📜 LYX RL Server Rules')
-     .setDescription('**Seleziona una categoria dal menu per leggere le regole**\n\n`⚠️` Rispetta tutte le regole per evitare ban.')
-     .setImage(CONFIG.BANNER_URL)
-     .setFooter({ text: 'LYX RL • Rules', iconURL: CONFIG.LOGO_URL });
-
-        const selectMenu = new StringSelectMenuBuilder()
-     .setCustomId('rules_menu')
-     .setPlaceholder('📜 Seleziona categoria regole')
-     .addOptions([
-                { label: 'Regole Generali', value: 'general', emoji: '📋' },
-                { label: 'Regole Chat', value: 'chat', emoji: '💬' },
-                { label: 'Regole Ticket', value: 'ticket', emoji: '🎫' },
-                { label: 'Termini di Servizio', value: 'tos', emoji: '📑' }
-            ]);
-
-        const row = new ActionRowBuilder().addComponents(selectMenu);
-        await message.channel.send({ embeds: [embed], components: [row] });
-        await message.delete();
-    }
-
-    // 5. SETUP STATS - BELLISSIMO
+    //!setupstats
     if (message.content === '!setupstats') {
-        const uptime = Math.floor(client.uptime / 1000);
+        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+
+        const totalMembers = message.guild.memberCount;
+        const onlineMembers = message.guild.members.cache.filter(m => m.presence?.status === 'online' || m.presence?.status === 'idle' || m.presence?.status === 'dnd').size;
+        const boostCount = message.guild.premiumSubscriptionCount || 0;
+        const boostLevel = message.guild.premiumTier;
+
+        const statsEmbed = new EmbedBuilder()
+           .setTitle('📊 LYX RL Live Statistics')
+           .setDescription('Statistiche in tempo reale del server LYX RL')
+           .addFields(
+                { name: '🟢 Bot Status', value: 'Online', inline: true },
+                { name: '🌐 Site Status', value: 'Online', inline: true },
+                { name: '👥 Membri Online', value: `${onlineMembers}/${totalMembers}`, inline: true },
+                { name: '🚀 Potenziamenti', value: `${boostCount} Boost - Livello ${boostLevel}`, inline: true },
+                { name: '💎 Membri Totali', value: `${totalMembers}`, inline: true },
+                { name: '📅 Uptime Bot', value: '0g 0h 0m', inline: true }
+            )
+           .setColor(0xFF0000)
+           .setImage(CONFIG.BANNER_URL)
+           .setFooter({ text: 'LYX RL Services • Aggiornato' })
+           .setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('refresh_stats').setLabel('Aggiorna Stats').setStyle(ButtonStyle.Danger).setEmoji('🔄')
+        );
+
+        await message.channel.send({ embeds: [statsEmbed], components: [row] });
+        await message.delete();
+    }
+
+    //!say
+    if (message.content.startsWith('!say ')) {
+        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+        const text = message.content.slice(5);
+        if (!text) return;
+        await message.channel.send(text);
+        await message.delete();
+    }
+
+    //!embed
+    if (message.content.startsWith('!embed ')) {
+        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+        const text = message.content.slice(7);
+        const embed = new EmbedBuilder().setDescription(text).setColor(0xFF0000).setFooter({ text: 'LYX RL Services' });
+        await message.channel.send({ embeds: [embed] });
+        await message.delete();
+    }
+
+    //!clear
+    if (message.content.startsWith('!clear ')) {
+        if (!message.member.permissions.has(PermissionFlagsBits.ManageMessages)) return;
+        const amount = parseInt(message.content.split(' ')[1]);
+        if (isNaN(amount) || amount > 100) return message.reply('Metti un numero da 1 a 100');
+        await message.channel.bulkDelete(amount, true);
+        message.channel.send(`✅ Cancellati ${amount} messaggi`).then(m => setTimeout(() => m.delete(), 3000));
+    }
+
+    //!lock
+    if (message.content === '!lock') {
+        if (!message.member.permissions.has(PermissionFlagsBits.ManageChannels)) return;
+        await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: false });
+        message.reply('🔒 Canale bloccato');
+    }
+
+    //!unlock
+    if (message.content === '!unlock') {
+        if (!message.member.permissions.has(PermissionFlagsBits.ManageChannels)) return;
+        await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: true });
+        message.reply('🔓 Canale sbloccato');
+    }
+});
+
+// ===== INTERAZIONI =====
+client.on('interactionCreate', async interaction => {
+    // Slash commands
+    if (interaction.isCommand()) {
+        if (interaction.commandName === 'ping') {
+            await interaction.reply({ content: `🏓 Pong! ${client.ws.ping}ms`, ephemeral: true });
+        }
+    }
+
+    // Menu lingua ticket
+    if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_language') {
+        const lang = interaction.values[0];
+        const existingTicket = interaction.guild.channels.cache.find(c => c.name === `ticket-${interaction.user.id}`);
+        if (existingTicket) return interaction.reply({ content: 'Hai già un ticket aperto!', ephemeral: true });
+
+        const ticketChannel = await interaction.guild.channels.create({
+            name: `ticket-${interaction.user.username}`,
+            type: ChannelType.GuildText,
+            parent: CONFIG.TICKET_CATEGORY,
+            permissionOverwrites: [
+                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+                { id: CONFIG.STAFF_ROLE, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
+            ]
+        });
+
+        const messages = {
+            en: { title: 'Support Request', desc: 'Select the reason for your ticket below' },
+            it: { title: 'Richiesta Supporto', desc: 'Seleziona il motivo del ticket qui sotto' },
+            es: { title: 'Solicitud de Soporte', desc: 'Selecciona el motivo del ticket abajo' }
+        };
+
+        const reasons = {
+            en: ['General Support', 'Purchase Credits', 'Partnerships', 'Other'],
+            it: ['Supporto Generale', 'Acquisto Crediti', 'Partnerships', 'Altro'],
+            es: ['Soporte General', 'Comprar Créditos', 'Partnerships', 'Otro']
+        };
+
+        const embed = new EmbedBuilder().setTitle(messages[lang].title).setDescription(messages[lang].desc).setColor(0xFF0000);
+        const row = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+               .setCustomId(`ticket_reason_${lang}_${interaction.user.id}`)
+               .setPlaceholder(messages[lang].desc)
+               .addOptions(reasons[lang].map(r => ({ label: r, value: r })))
+        );
+
+        await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [embed], components: [row] });
+        await interaction.reply({ content: `Ticket creato: ${ticketChannel}`, ephemeral: true });
+    }
+
+    // Menu motivo ticket
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ticket_reason_')) {
+        const [,, lang, userId] = interaction.customId.split('_');
+        const reason = interaction.values[0];
+
+        const closeEmbed = new EmbedBuilder()
+           .setTitle('🎫 Ticket Aperto')
+           .setDescription(`**Motivo:** ${reason}\n\nLo staff ti risponderà a breve.`)
+           .setColor(0xFF0000);
+
+        const closeRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('close_ticket').setLabel('Chiudi Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒')
+        );
+
+        await interaction.update({ embeds: [closeEmbed], components: [closeRow] });
+    }
+
+    // Bottone chiudi ticket
+    if (interaction.isButton() && interaction.customId === 'close_ticket') {
+        await interaction.reply('🔒 Ticket chiuso tra 5 secondi...');
+        setTimeout(() => interaction.channel.delete(), 5000);
+    }
+
+    // Bottone refresh stats
+    if (interaction.isButton() && interaction.customId === 'refresh_stats') {
+        await interaction.deferUpdate();
+
+        const totalMembers = interaction.guild.memberCount;
+        const onlineMembers = interaction.guild.members.cache.filter(m => m.presence?.status === 'online' || m.presence?.status === 'idle' || m.presence?.status === 'dnd').size;
+        const boostCount = interaction.guild.premiumSubscriptionCount || 0;
+        const boostLevel = interaction.guild.premiumTier;
+        const uptime = process.uptime();
         const days = Math.floor(uptime / 86400);
         const hours = Math.floor(uptime / 3600) % 24;
         const minutes = Math.floor(uptime / 60) % 60;
 
-        const embed = new EmbedBuilder()
-     .setColor('#FF0000')
-     .setTitle('📊 LYX RL Live Statistics')
-     .setDescription('**Statistiche in tempo reale del server LYX RL**')
-     .setThumbnail(CONFIG.LOGO_URL)
-     .addFields(
-                { name: '🤖 Bot Status', value: '`🟢 Online`', inline: true },
-                { name: '📡 Ping', value: `\`${client.ws.ping}ms\``, inline: true },
-                { name: '⏱️ Uptime', value: `\`${days}g ${hours}h ${minutes}m\``, inline: true },
-                { name: '👥 Membri Totali', value: `\`${message.guild.memberCount}\``, inline: true },
-                { name: '💬 Canali', value: `\`${message.guild.channels.cache.size}\``, inline: true },
-                { name: '🎭 Ruoli', value: `\`${message.guild.roles.cache.size}\``, inline: true },
-                { name: '🖥️ Server', value: '`Railway Cloud`', inline: true },
-                { name: '📅 Creazione Server', value: `<t:${Math.floor(message.guild.createdTimestamp / 1000)}:R>`, inline: true },
-                { name: '⚡ Node.js', value: `\`${process.version}\``, inline: true }
+        const updatedEmbed = new EmbedBuilder()
+           .setTitle('📊 LYX RL Live Statistics')
+           .setDescription('Statistiche in tempo reale del server LYX RL')
+           .addFields(
+                { name: '🟢 Bot Status', value: 'Online', inline: true },
+                { name: '🌐 Site Status', value: 'Online', inline: true },
+                { name: '👥 Membri Online', value: `${onlineMembers}/${totalMembers}`, inline: true },
+                { name: '🚀 Potenziamenti', value: `${boostCount} Boost - Livello ${boostLevel}`, inline: true },
+                { name: '💎 Membri Totali', value: `${totalMembers}`, inline: true },
+                { name: '📅 Uptime Bot', value: `${days}g ${hours}h ${minutes}m`, inline: true }
             )
-     .setImage(CONFIG.BANNER_URL)
-     .setFooter({ text: 'LYX RL • Auto-Update ogni comando', iconURL: CONFIG.LOGO_URL })
-     .setTimestamp();
+           .setColor(0xFF0000)
+           .setImage(CONFIG.BANNER_URL)
+           .setFooter({ text: 'LYX RL Services • Aggiornato' })
+           .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-       .setCustomId('refresh_stats')
-       .setLabel('Aggiorna Stats')
-       .setEmoji('🔄')
-       .setStyle(ButtonStyle.Danger),
-            new ButtonBuilder()
-       .setLabel('Website')
-       .setEmoji('🌐')
-       .setStyle(ButtonStyle.Link)
-       .setURL(CONFIG.WEBSITE_URL)
-        );
-
-        await message.channel.send({ embeds: [embed], components: [row] });
-        await message.delete();
+        await interaction.editReply({ embeds: [updatedEmbed] });
     }
 });
 
-// INTERAZIONI
-client.on('interactionCreate', async interaction => {
-    try {
-        // REFRESH STATS
-        if (interaction.isButton() && interaction.customId === 'refresh_stats') {
-            await interaction.deferUpdate();
-            const uptime = Math.floor(client.uptime / 1000);
-            const days = Math.floor(uptime / 86400);
-            const hours = Math.floor(uptime / 3600) % 24;
-            const minutes = Math.floor(uptime / 60) % 60;
-
-            const embed = new EmbedBuilder()
-       .setColor('#FF0000')
-       .setTitle('📊 LYX RL Live Statistics')
-       .setDescription('**Statistiche in tempo reale del server LYX RL**')
-       .setThumbnail(CONFIG.LOGO_URL)
-       .addFields(
-                    { name: '🤖 Bot Status', value: '`🟢 Online`', inline: true },
-                    { name: '📡 Ping', value: `\`${client.ws.ping}ms\``, inline: true },
-                    { name: '⏱️ Uptime', value: `\`${days}g ${hours}h ${minutes}m\``, inline: true },
-                    { name: '👥 Membri Totali', value: `\`${interaction.guild.memberCount}\``, inline: true },
-                    { name: '💬 Canali', value: `\`${interaction.guild.channels.cache.size}\``, inline: true },
-                    { name: '🎭 Ruoli', value: `\`${interaction.guild.roles.cache.size}\``, inline: true },
-                    { name: '🖥️ Server', value: '`Railway Cloud`', inline: true },
-                    { name: '📅 Creazione Server', value: `<t:${Math.floor(interaction.guild.createdTimestamp / 1000)}:R>`, inline: true },
-                    { name: '⚡ Node.js', value: `\`${process.version}\``, inline: true }
-                )
-       .setImage(CONFIG.BANNER_URL)
-       .setFooter({ text: `Ultimo aggiornamento`, iconURL: CONFIG.LOGO_URL })
-       .setTimestamp();
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('refresh_stats').setLabel('Aggiorna Stats').setEmoji('🔄').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setLabel('Website').setEmoji('🌐').setStyle(ButtonStyle.Link).setURL(CONFIG.WEBSITE_URL)
-            );
-            await interaction.editReply({ embeds: [embed], components: [row] });
-        }
-
-        // TICKET SYSTEM
-        if (interaction.isButton() && interaction.customId === 'open_ticket') {
-            const selectMenu = new StringSelectMenuBuilder()
-       .setCustomId('select_language')
-       .setPlaceholder('🌍 Select your language / Seleziona la lingua')
-       .addOptions([
-                    { label: 'Italiano', value: 'it', emoji: '🇮🇹', description: 'Continua in Italiano' },
-                    { label: 'English', value: 'en', emoji: '🇬🇧', description: 'Continue in English' },
-                    { label: 'Español', value: 'es', emoji: '🇪🇸', description: 'Continuar en Español' }
-                ]);
-            const row = new ActionRowBuilder().addComponents(selectMenu);
-            await interaction.reply({ content: '**Seleziona la lingua del ticket:**', components: [row], ephemeral: true });
-        }
-
-        if (interaction.isStringSelectMenu() && interaction.customId === 'select_language') {
-            await interaction.deferUpdate();
-            const lang = interaction.values[0];
-            const t = LANG[lang];
-            const cleanUsername = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
-            const channelName = `ticket-${cleanUsername}`;
-
-            const existing = interaction.guild.channels.cache.find(c => c.name === channelName);
-            if (existing) {
-                return interaction.followUp({ content: t.alreadyOpen.replace('{channel}', existing), ephemeral: true });
-            }
-
-            const ticketChannel = await interaction.guild.channels.create({
-                name: channelName,
-                type: ChannelType.GuildText,
-                parent: CONFIG.TICKET_CATEGORY,
-                permissionOverwrites: [
-                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] },
-                    { id: CONFIG.STAFF_ROLE, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
-                ]
-            });
-
-            const embedTicket = new EmbedBuilder()
-       .setColor('#FF0000')
-       .setTitle(`🎫 LYX RL Support - ${lang.toUpperCase()}`)
-       .setDescription(t.welcome.replace('{user}', interaction.user))
-       .setFooter({ text: `User ID: ${interaction.user.id}` })
-       .setTimestamp();
-
-            const reasonMenu = new StringSelectMenuBuilder()
-       .setCustomId(`ticket_reason_${lang}`)
-       .setPlaceholder(t.selectReason)
-       .addOptions([
-                    { label: t.reasons.support, value: 'support', emoji: '🆘' },
-                    { label: t.reasons.replace, value: 'replace', emoji: '🔄' },
-                    { label: t.reasons.notdelivered, value: 'notdelivered', emoji: '📦' },
-                    { label: t.reasons.other, value: 'other', emoji: '❓' }
-                ]);
-
-            const closeButton = new ButtonBuilder()
-       .setCustomId('close_ticket')
-       .setLabel(t.close)
-       .setEmoji('🔒')
-       .setStyle(ButtonStyle.Secondary);
-
-            const row1 = new ActionRowBuilder().addComponents(reasonMenu);
-            const row2 = new ActionRowBuilder().addComponents(closeButton);
-
-            await ticketChannel.send({
-                content: `${interaction.user} ${interaction.guild.roles.cache.get(CONFIG.STAFF_ROLE)}`,
-                embeds: [embedTicket],
-                components: [row1, row2]
-            });
-            await interaction.followUp({ content: t.ticketCreated.replace('{channel}', ticketChannel), ephemeral: true });
-        }
-
-        if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ticket_reason_')) {
-            const lang = interaction.customId.split('_')[2];
-            const reason = interaction.values[0];
-            const t = LANG[lang];
-            const reasonText = { support: t.reasons.support, replace: t.reasons.replace, notdelivered: t.reasons.notdelivered, other: t.reasons.other };
-            await interaction.reply({ content: `✅ **Motivo selezionato:** ${reasonText[reason]}\n\n> Lo staff ti risponderà al più presto. Descrivi il tuo problema qui sotto.`, ephemeral: false });
-        }
-
-        if (interaction.isButton() && interaction.customId === 'close_ticket') {
-            await interaction.reply('🔒 Chiusura ticket in corso...');
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
-        }
-
-        if (interaction.isButton() && interaction.customId === 'buy_product') {
-            await interaction.reply({ content: '**Per acquistare apri un ticket** 🎫', ephemeral: true });
-        }
-
-        if (interaction.isStringSelectMenu() && interaction.customId === 'rules_menu') {
-            const rules = {
-                general: '**📋 REGOLE GENERALI**\n\n1. Rispetta tutti i membri dello staff e gli utenti\n2. No spam/flood/mass ping\n3. No NSFW o contenuti inappropriati\n4. No pubblicità o self-promo\n5. No discussioni politiche/religiose',
-                chat: '**💬 REGOLE CHAT**\n\n1. No bestemmie o linguaggio eccessivo\n2. No flame o tossicità\n3. Usa i canali giusti per ogni argomento\n4. Rispetta lo staff e le decisioni\n5. No spoiler senza tag',
-                ticket: '**🎫 REGOLE TICKET**\n\n1. Apri ticket solo per problemi reali con ordini\n2. No spam ticket - 1 ticket alla volta\n3. Sii educato con lo staff\n4. Fornisci prove/screen se richieste\n5. I ticket inattivi vengono chiusi dopo 24h',
-                tos: '**📑 TERMINI DI SERVIZIO**\n\n1. Nessun rimborso dopo consegna del prodotto\n2. Garanzia lifetime valida se non cambi password\n3. Ban immediato per chargeback\n4. Non condividere account con altri\n5. Lo staff si riserva il diritto di rifiutare il servizio'
-            };
-            await interaction.reply({ content: rules[interaction.values[0]], ephemeral: true });
-        }
-
-    } catch (error) {
-        console.error('Errore:', error);
-    }
-});
-
-// COMANDO SELLS
-client.on('messageCreate', async message => {
-    if (message.author.bot) return;
-    if (message.content.toLowerCase() === 'sells') {
-        const embed = new EmbedBuilder()
-     .setColor('#FF0000')
-     .setTitle('💰 LYX RL SELLS')
-     .setDescription('**Cosa vendiamo:**\n\n🎵 **Spotify Premium** Lifetime\n🎬 **Netflix 4K** Lifetime\n🏰 **Disney+ 4K** Lifetime\n📺 **Amazon Prime Video** Lifetime\n\n*e molto altro...*\n\n**Apri un ticket per acquistare** 🎫')
-     .setFooter({ text: 'LYX RL • Premium Accounts' })
-     .setTimestamp();
-        await message.reply({ embeds: [embed] });
-    }
-});
-
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.TOKEN);
