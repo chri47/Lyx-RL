@@ -1,2 +1,8 @@
 [phases.setup]
-aptPkgs = ["build-essential", "libcairo2-dev", "libpango1.0-dev", "libjpeg-dev", "libgif-dev", "librsvg2-dev"]
+nixPkgs = ['nodejs-18_x', 'python3', 'cairo', 'pango', 'libpng', 'jpeg', 'giflib', 'librsvg', 'pkg-config', 'build-essential']
+
+[phases.build]
+cmds = ['npm install --build-from-source=canvas']
+
+[start]
+cmd = 'npm start'
