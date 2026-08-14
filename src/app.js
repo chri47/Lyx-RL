@@ -29,7 +29,7 @@ client.on(Events.MessageCreate, async message => {
     if (message.author.bot) return;
 
     // COMANDO SETUP TICKET
-    if (message.content === '!setup-ticket' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+    if (message.content === '!setup-ticket' && message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
         const row = {
             type: 1,
             components: [
@@ -44,14 +44,12 @@ client.on(Events.MessageCreate, async message => {
             content: "**🎫 Support Ticket System**\nSeleziona il tipo di supporto di cui hai bisogno:",
             components: [row]
         });
-        await message.delete();
+        await message.delete().catch(() => {});
         console.log('[CMD] Pannello ticket creato');
         return;
     }
 
     // ===== QUI SOTTO RESTA IL TUO CODICE ESISTENTE =====
-    // ESEMPIO: Welcome, Ban, Music, Level ecc...
-    // Non toccare nulla, lascia tutto com'è
 });
 
 // ===== GESTORE PULSANTI E INTERAZIONI UNICO =====
@@ -63,7 +61,12 @@ client.on(Events.InteractionCreate, async interaction => {
 
     // ===== SISTEMA TICKET =====
     if (interaction.isButton() && interaction.customId.startsWith('ticket_')) {
-        await interaction.deferReply({ flags: 64 }); // 64 = ephemeral
+        // FIX 1: BLOCCA I DM - SE NON SEI IN UN SERVER, ESCI
+        if (!interaction.guild) {
+            return interaction.reply({ content: '❌ Devi usare i ticket in un server, non in DM!', flags: 64 });
+        }
+
+        await interaction.deferReply({ flags: 64 }); // FIX 2: flags: 64 al posto di ephemeral
 
         try {
             // CHIUDI TICKET
@@ -75,7 +78,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
             // CREA TICKET
             const ticketType = interaction.customId.replace('ticket_', '');
-            const ticketName = `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            const ticketName = `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 90);
 
             // Controlla se ha già un ticket aperto
             const existing = interaction.guild.channels.cache.find(c => c.name === ticketName);
@@ -91,7 +94,6 @@ client.on(Events.InteractionCreate, async interaction => {
                     { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
                     { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] },
                     { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageChannels] }
-                    // AGGIUNGI QUI ID RUOLO STAFF: { id: 'ID_RUOLO_STAFF', allow: [PermissionsBitField.Flags.ViewChannel] }
                 ],
             });
 
@@ -107,37 +109,32 @@ client.on(Events.InteractionCreate, async interaction => {
 
         } catch (error) {
             console.error('[ERRORE TICKET]', error);
-            await interaction.editReply(`❌ ERRORE: ${error.message}`);
+            // FIX 3: CONTROLLA SE L'INTERAZIONE È ANCORA VALIDA
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply(`❌ ERRORE: ${error.message}`).catch(() => {});
+            }
         }
-        return; // IMPORTANTE: ferma qui per non interferire con altri sistemi
+        return;
     }
 
     // ===== QUI SOTTO LASCIA TUTTI I TUOI PULSANTI ESISTENTI =====
-    // ESEMPIO VERIFY
     if (interaction.isButton() && interaction.customId === 'verify_button') {
-        // TUO CODICE VERIFY QUI - NON TOCCARLO
-        console.log('[VERIFY] Click verify da', interaction.user.tag);
-        //...
+        // TUO CODICE VERIFY QUI
         return;
     }
 
-    // ESEMPIO GIVEAWAY
     if (interaction.isButton() && interaction.customId === 'giveaway_join') {
-        // TUO CODICE GIVEAWAY QUI - NON TOCCARLO
-        console.log('[GIVEAWAY] Join da', interaction.user.tag);
-        //...
+        // TUO CODICE GIVEAWAY QUI
         return;
     }
 
-    // ESEMPIO REACTION ROLES
     if (interaction.isButton() && interaction.customId.startsWith('rr_')) {
-        // TUO CODICE REACTION ROLES QUI - NON TOCCARLO
+        // TUO CODICE REACTION ROLES QUI
         return;
     }
 
-    // ESEMPIO MUSICA
     if (interaction.isButton() && ['music_play', 'music_pause', 'music_skip'].includes(interaction.customId)) {
-        // TUO CODICE LAVALINK QUI - NON TOCCARLO
+        // TUO CODICE LAVALINK QUI
         return;
     }
 
