@@ -88,9 +88,9 @@ client.on('messageCreate', async message => {
      .setTitle('🛒 LYX RL Premium Stock')
      .setDescription('**Seleziona un prodotto per acquistare**\n\n> Tutti i prodotti sono Lifetime Warranty\n> Consegna instantanea dopo il pagamento')
      .addFields(
-                { name: '🎵 Spotify Premium', value: '`€3.99` Lifetime | Stock: `∞`', inline: true },
-                { name: '🎬 Netflix 4K', value: '`€5.99` Lifetime | Stock: `∞`', inline: true },
-                { name: '🏰 Disney+ 4K', value: '`€4.99` Lifetime | Stock: `∞`', inline: true }
+                { name: '🎵 Spotify Premium', value: '`€5` Lifetime | Stock: `∞`', inline: true },
+                { name: '🎬 Netflix 4K', value: '`€3` Lifetime | Stock: `∞`', inline: true },
+                { name: '🏰 Disney+ 4K', value: '`€0.70` Lifetime | Stock: `∞`', inline: true }
             )
      .setImage(CONFIG.BANNER_URL)
      .setFooter({ text: 'LYX RL • Premium Products', iconURL: CONFIG.LOGO_URL });
