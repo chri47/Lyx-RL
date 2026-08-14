@@ -1,14 +1,13 @@
 {
   "name": "lyx-rl-bot",
   "version": "1.0.0",
-  "description": "Bot LYX RL con verify, ticket, vouches, welcome",
+  "description": "Bot LYX RL",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
-    "canvas": "^2.11.2"
+    "discord.js": "^14.14.1"
   },
   "engines": {
     "node": "18.x"
