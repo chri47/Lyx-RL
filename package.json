@@ -1,14 +1,16 @@
 {
-  "name": "llxnode",
-  "version": "1.0.0",
+  "name": "lyxrl-bot",
+  "version": "8.0.0",
+  "description": "LYX RL Premium Bot - Tickets, LTC, Web, Stats, Webhook Ordini",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js"
   },
   "dependencies": {
-    "discord.js": "^14.22.1"
+    "discord.js": "^14.14.1",
+    "express": "^4.18.2"
   },
   "engines": {
-    "node": "18.x"
+    "node": ">=18.0.0"
   }
 }
