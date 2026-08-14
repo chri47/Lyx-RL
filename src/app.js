@@ -19,8 +19,8 @@ const CONFIG = {
     TICKET_CATEGORY: '1530144375575679187', // ID categoria ticket
     STAFF_ROLE: '1530144125599612978', // ID ruolo staff
     WEBSITE_URL: 'https://lyxrlservices.mysellauth.com/', // Tuo link
-    BANNER_URL: 'https://discord.com/channels/@me/1529233083801407690/1537640293351030814', // Banner rosso 1024x500
-    LOGO_URL: 'https://discord.com/channels/@me/1530941725256716331/1537551598291648623' // Logo tondo per footer
+    BANNER_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428', // Banner rosso 1024x500
+    LOGO_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428' // Logo tondo per footer
 };
 
 client.once('ready', () => {
@@ -60,9 +60,9 @@ client.on('messageCreate', async message => {
           .setTitle('<:cart:123> LYX RL Premium Stock')
           .setDescription('**Seleziona un prodotto per acquistare**\n\n> Tutti i prodotti sono Lifetime Warranty\n> Consegna instantanea dopo il pagamento')
           .addFields(
-                { name: '<:spotify:123> Spotify Premium', value: '`€3.99` Lifetime | Stock: `∞`', inline: true },
-                { name: '<:netflix:123> Netflix 4K', value: '`€5.99` Lifetime | Stock: `∞`', inline: true },
-                { name: '<:disney:123> Disney+ 4K', value: '`€4.99` Lifetime | Stock: `∞`', inline: true }
+                { name: '<:spotify:> Spotify Premium', value: '`€5` Lifetime | Stock: `∞`', inline: true },
+                { name: '<:netflix:> Netflix ', value: '`€3` Lifetime | Stock: `∞`', inline: true },
+                { name: '<:disney:> Disney+ ', value: '`€0.70` Lifetime | Stock: `∞`', inline: true }
             )
           .setImage(CONFIG.BANNER_URL)
           .setFooter({ text: 'LYX RL • Premium Products', iconURL: CONFIG.LOGO_URL });
