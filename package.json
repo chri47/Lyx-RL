@@ -1,17 +1,17 @@
 {
-  "type": "module",
   "name": "lyx-rl-bot",
   "version": "1.0.0",
-  "description": "LYX RL Services Discord Bot with Canvas Welcome",
+  "description": "Bot Discord per LYX RL Services",
   "main": "src/app.js",
+  "type": "module",
   "scripts": {
     "start": "node src/app.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
+    "discord.js": "^14.17.3",
     "canvas": "^2.11.2"
   }
 }
