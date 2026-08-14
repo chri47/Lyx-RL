@@ -2,9 +2,9 @@
   "name": "lyx-rl-bot",
   "version": "1.0.0",
   "description": "LYX RL Premium Bot",
-  "main": "app.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node src/app.js"
   },
   "dependencies": {
     "discord.js": "^14.14.1",
