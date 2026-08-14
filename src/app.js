@@ -19,7 +19,7 @@ const STAFF_ROLE_ID = null;
 const LTC_WALLET = 'ltc1q4cunrt3ahlcktl7gdn9svq9uwenvzkacmgyq35';
 const BANNER_URL = 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428';
 const REVIEW_CHANNEL_NAME = '🔍・vouches';
-const WEBSITE_URL = 'https://tuosito.com'; // METTI IL TUO SITO QUI
+const WEBSITE_URL = 'https://lyxrlservices.mysellauth.com/'; // METTI IL TUO SITO QUI
 const STAFF_MEMBERS = [
     { name: 'iDanger', id: '1327759048858140794' },
     { name: 'iCocoo', id: '1143252603342438490' },
