@@ -1,123 +1,84 @@
-import {
-    Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
-    StringSelectMenuBuilder, ChannelType, PermissionsBitField, ModalBuilder, TextInputBuilder, TextInputStyle
-} from 'discord.js';
-import express from 'express';
-import { createCanvas, loadImage } from 'canvas';
-import QRCode from 'qrcode';
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, PermissionsBitField } = require('discord.js');
+
+let Canvas;
+try {
+    Canvas = require('canvas');
+} catch (e) {
+    console.log('Canvas non caricato, welcome userà solo testo');
+}
+
+// --- CONFIG ---
+const VERIFIED_ROLE_ID = '1530144188333817897';
+const STAFF_ROLE_ID = '1530144125599612978';
+const WELCOME_CHANNEL_NAME = 'welcome';
+const VOUCHES_CHANNEL_NAME = '🔍・vouches';
+const LOGS_CHANNEL_NAME = 'logs';
+const LTC_ADDRESS = 'ltc1q4cunrt3ahlcktl7gdn9svq9uwenvzkacmgyq35'; // CAMBIA COL TUO
+const WEBSITE_URL = https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a806f5d&is=6a7f1ddd&hm=3cf40269e7b1f7e9fce71a0d6a3cc1810a5700360714dd017e07c31e7c600d97&=&format=webp&quality=lossless&width=768&height=428'; // CAMBIA COL TUO
+const BANNER_URL = 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a806f5d&is=6a7f1ddd&hm=3cf40269e7b1f7e9fce71a0d6a3cc1810a5700360714dd017e07c31e7c600d97&=&format=webp&quality=lossless&width=768&height=428'; // CAMBIA COL TUO
+// --------------
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
+        GatewayIntentBits.MessageContent
     ]
 });
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('LYX RL Bot Online'));
-app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-
-const CONFIG = {
-    TICKET_CATEGORY: '1530144246055829626',
-    STAFF_ROLE: '1530144125599612978',
-    WEBSITE_URL: 'https://lyxrlservices.mysellauth.com/',
-    BANNER_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428',
-    LOGO_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428',
-    LTC_WALLET: 'LXyRLp7mK3nQ9wR2tY8uI5oP4sD6fG1hJ2kL3zX4cV5bN6mM7',
-    REVIEWS_CHANNEL: '🔍・vouches',
-    welcomeChannel: 'welcome',
-    verifiedRole: 'Membres'
-};
-
-const LANG = {
-    it: {
-        welcome: 'Ciao {user}, benvenuto nel supporto LYX RL.\n\n> Seleziona il motivo del ticket dal menu qui sotto.',
-        close: 'Chiudi Ticket',
-        selectReason: '📋 Seleziona il motivo del ticket',
-        reasons: { support: 'Supporto Generale', replace: 'Sostituzione Account', notdelivered: 'Ordine Non Ricevuto', other: 'Altro' },
-        ticketCreated: '✅ Ticket creato: {channel}',
-        alreadyOpen: '❌ Hai già un ticket aperto: {channel}'
-    },
-    en: {
-        welcome: 'Hello {user}, welcome to LYX RL support.\n\n> Select the reason for your ticket from the menu below.',
-        close: 'Close Ticket',
-        selectReason: '📋 Select ticket reason',
-        reasons: { support: 'General Support', replace: 'Account Replacement', notdelivered: 'Order Not Received', other: 'Other' },
-        ticketCreated: '✅ Ticket created: {channel}',
-        alreadyOpen: '❌ You already have an open ticket: {channel}'
-    },
-    es: {
-        welcome: 'Hola {user}, bienvenido al soporte de LYX RL.\n\n> Selecciona el motivo del ticket en el menú de abajo.',
-        close: 'Cerrar Ticket',
-        selectReason: '📋 Selecciona el motivo del ticket',
-        reasons: { support: 'Soporte General', replace: 'Reemplazo de Cuenta', notdelivered: 'Pedido No Recibido', other: 'Otro' },
-        ticketCreated: '✅ Ticket creado: {channel}',
-        alreadyOpen: '❌ Ya tienes un ticket abierto: {channel}'
-    }
-};
-
 client.once('ready', () => {
-    console.log(`✅ ${client.user.tag} è online!`);
-    client.user.setActivity('LYX RL Premium', { type: 3 });
+    console.log(`✅ Bot online come ${client.user.tag}`);
 });
 
-// WELCOME CON BANNER + AVATAR + NOME - ORA FUNZIONA
-client.on('guildMemberAdd', async (member) => {
-    const channel = member.guild.channels.cache.find(ch => ch.name === CONFIG.welcomeChannel);
-    if (!channel) {
-        console.log(`[WELCOME] Canale '${CONFIG.welcomeChannel}' non trovato!`);
-        return;
+// --- WELCOME CON BANNER + FALLBACK ---
+client.on('guildMemberAdd', async member => {
+    const channel = member.guild.channels.cache.find(ch => ch.name === WELCOME_CHANNEL_NAME);
+    if (!channel) return console.log('Canale welcome non trovato');
+
+    // Se Canvas non funziona, manda solo testo
+    if (!Canvas) {
+        return channel.send(`🎉 Benvenuto ${member}!\nSei il membro #${member.guild.memberCount}`);
     }
 
     try {
+        const { createCanvas, loadImage } = Canvas;
         const canvas = createCanvas(1024, 500);
         const ctx = canvas.getContext('2d');
 
-        // 1. IL TUO BANNER COME SFONDO
-        const background = await loadImage(CONFIG.BANNER_URL);
-        ctx.drawImage(background, 0, 0, 1024, 500);
+        const background = await loadImage(BANNER_URL);
+        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // 2. AVATAR ROTONDO AL CENTRO
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
         const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 256 }));
         ctx.save();
         ctx.beginPath();
-        ctx.arc(512, 150, 100, 0, Math.PI * 2, true);
+        ctx.arc(512, 200, 100, 0, Math.PI * 2, true);
         ctx.closePath();
         ctx.clip();
-        ctx.drawImage(avatar, 412, 50, 200, 200);
+        ctx.drawImage(avatar, 412, 100, 200, 200);
         ctx.restore();
 
-        // 3. NOME UTENTE GROSSO CON BORDO
-        ctx.font = 'bold 70px Arial';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 10;
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 8;
-        ctx.strokeText(`${member.user.username}`, 512, 350);
+        ctx.font = 'bold 60px Arial';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${member.user.username}`, 512, 350);
+        ctx.textAlign = 'center';
+        ctx.fillText(`Benvenuto ${member.user.username}`, 512, 380);
 
-        // 4. SCRITTA BENVENUTO SU LYX RL
-        ctx.font = 'bold 40px Arial';
-        ctx.shadowBlur = 8;
-        ctx.strokeText(`BENVENUTO SU LYX RL`, 512, 420);
-        ctx.fillText(`BENVENUTO SU LYX RL`, 512, 420);
+        ctx.font = '40px Arial';
+        ctx.fillText(`Sei il membro #${member.guild.memberCount}`, 512, 440);
 
-        await channel.send({
-            content: `Benvenuto ${member} su LYX RL Services! Fai!verify per verificarti.`,
-            files: [{ attachment: canvas.toBuffer(), name: 'welcome.png' }]
-        });
-        console.log(`[WELCOME] Inviato welcome per ${member.user.tag}`);
+        const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome.png' });
+        await channel.send({ content: `🎉 Benvenuto ${member}!`, files: [attachment] });
     } catch (error) {
-        console.error('Errore welcome:', error);
-        await channel.send(`Benvenuto ${member} su LYX RL Services!`);
+        console.error('Errore banner, uso fallback testo:', error);
+        await channel.send(`🎉 Benvenuto ${member}!\nSei il membro #${member.guild.memberCount}`);
     }
 });
 
+// --- COMANDI ---
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
     if (!message.content.startsWith('!')) return;
@@ -125,395 +86,238 @@ client.on('messageCreate', async message => {
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    if (message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        if (command === 'setupverify') {
-            const embed = new EmbedBuilder()
-  .setColor('#00FF7F')
-  .setTitle('✅ Verifica LYX RL')
-  .setDescription('**Clicca il pulsante qui sotto per verificarti e accedere al server.**\n\n> Riceverai il ruolo `Membres`')
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Verification', iconURL: CONFIG.LOGO_URL });
-
-            const button = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('verify_button').setLabel('Verificami').setStyle(ButtonStyle.Success).setEmoji('✅')
-            );
-            await message.channel.send({ embeds: [embed], components: [button] });
-            return message.delete();
-        }
-
-        if (command === 'setuprecensione') {
-            const embed = new EmbedBuilder()
-  .setColor('#FFD700')
-  .setTitle('⭐ Lascia una Recensione')
-  .setDescription('**Ti sei trovato bene con LYX RL Services?**\n\n> Clicca il pulsante qui sotto per lasciare una recensione!\n> La tua opinione è importante per noi.')
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Feedback', iconURL: CONFIG.LOGO_URL });
-
-            const button = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('open_review').setLabel('Lascia Recensione').setStyle(ButtonStyle.Primary).setEmoji('⭐')
-            );
-            await message.channel.send({ embeds: [embed], components: [button] });
-            return message.delete();
-        }
-
-        if (command === 'setupticket') {
-            const embed = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle('🎫 LYX RL Support System')
-  .setDescription('**Benvenuto nel supporto ufficiale LYX RL**\n\n> Per aprire un ticket di assistenza clicca il pulsante qui sotto.\n> Seleziona la tua lingua preferita per continuare.\n\n`⚠️` Apri un ticket solo se hai problemi con ordini o prodotti.')
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Premium Support', iconURL: CONFIG.LOGO_URL });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('open_ticket').setLabel('Apri Ticket').setEmoji('🎫').setStyle(ButtonStyle.Danger)
-            );
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        if (command === 'setupstock') {
-            const embed = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle('🛒 LYX RL Premium Stock')
-  .setDescription('**Seleziona un prodotto per acquistare**\n\n> Tutti i prodotti sono Lifetime Warranty\n> Consegna instantanea dopo il pagamento')
-  .addFields(
-                { name: '🎵 Spotify Premium', value: '`€3.99` Lifetime | Stock: `∞`', inline: true },
-                { name: '🎬 Netflix 4K', value: '`€5.99` Lifetime | Stock: `∞`', inline: true },
-                { name: '🏰 Disney+ 4K', value: '`€4.99` Lifetime | Stock: `∞`', inline: true }
-            )
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Premium Products', iconURL: CONFIG.LOGO_URL });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('buy_product').setLabel('Acquista Ora').setEmoji('🛒').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setLabel('Website').setEmoji('🌐').setStyle(ButtonStyle.Link).setURL(CONFIG.WEBSITE_URL)
-            );
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        if (command === 'setupwebsite') {
-            const embed = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle('🌐 LYX RL Official Website')
-  .setDescription('**Visita il nostro sito ufficiale per:**\n\n> `🛍️` Catalogo completo prodotti\n> `💳` Pagamenti automatici\n> `📦` Consegna istantanea\n> `🎁` Sconti esclusivi')
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Official Store', iconURL: CONFIG.LOGO_URL });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setLabel('Vai al Sito').setEmoji('🌐').setStyle(ButtonStyle.Link).setURL(CONFIG.WEBSITE_URL)
-            );
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        if (command === 'setuprules') {
-            const embed = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle('📜 LYX RL Server Rules')
-  .setDescription('**Seleziona una categoria dal menu per leggere le regole**\n\n`⚠️` Rispetta tutte le regole per evitare ban.')
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Rules', iconURL: CONFIG.LOGO_URL });
-
-            const selectMenu = new StringSelectMenuBuilder()
-  .setCustomId('rules_menu')
-  .setPlaceholder('📜 Seleziona categoria regole')
-  .addOptions([
-                { label: 'Regole Generali', value: 'general', emoji: '📋' },
-                { label: 'Regole Chat', value: 'chat', emoji: '💬' },
-                { label: 'Regole Ticket', value: 'ticket', emoji: '🎫' },
-                { label: 'Termini di Servizio', value: 'tos', emoji: '📑' }
-            ]);
-
-            const row = new ActionRowBuilder().addComponents(selectMenu);
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        if (command === 'setupstats') {
-            const uptime = Math.floor(client.uptime / 1000);
-            const days = Math.floor(uptime / 86400);
-            const hours = Math.floor(uptime / 3600) % 24;
-            const minutes = Math.floor(uptime / 60) % 60;
-
-            const embed = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle('📊 LYX RL Live Statistics')
-  .setDescription('**Statistiche in tempo reale del server LYX RL**')
-  .setThumbnail(CONFIG.LOGO_URL)
-  .addFields(
-                { name: '🤖 Bot Status', value: '`🟢 Online`', inline: true },
-                { name: '📡 Ping', value: `\`${client.ws.ping}ms\``, inline: true },
-                { name: '⏱️ Uptime', value: `\`${days}g ${hours}h ${minutes}m\``, inline: true },
-                { name: '👥 Membri Totali', value: `\`${message.guild.memberCount}\``, inline: true },
-                { name: '💬 Canali', value: `\`${message.guild.channels.cache.size}\``, inline: true },
-                { name: '🎭 Ruoli', value: `\`${message.guild.roles.cache.size}\``, inline: true },
-                { name: '🖥️ Server', value: '`Railway Cloud`', inline: true },
-                { name: '📅 Creazione Server', value: `<t:${Math.floor(message.guild.createdTimestamp / 1000)}:R>`, inline: true },
-                { name: '⚡ Node.js', value: `\`${process.version}\``, inline: true }
-            )
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: 'LYX RL • Auto-Update ogni comando', iconURL: CONFIG.LOGO_URL })
-  .setTimestamp();
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('refresh_stats').setLabel('Aggiorna Stats').setEmoji('🔄').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setLabel('Website').setEmoji('🌐').setStyle(ButtonStyle.Link).setURL(CONFIG.WEBSITE_URL)
-            );
-
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-    }
-
-    if (command === 'ping') {
-        const sent = await message.reply('Calcolo ping...');
-        sent.edit(`Pong! ${sent.createdTimestamp - message.createdTimestamp}ms`);
-    }
-
-    if (command === 'verify') {
-        const role = message.guild.roles.cache.find(r => r.name === CONFIG.verifiedRole);
-        if (!role) return message.reply('Ruolo `Membres` non trovato! Crealo prima.');
-        if (message.member.roles.cache.has(role.id)) return message.reply('Sei già verificato!');
-        await message.member.roles.add(role);
-        await message.reply('Sei stato verificato con successo! ✅');
-    }
-
-    if (command === 'sells') {
-        const embed = new EmbedBuilder()
-.setColor('#FF0000')
-.setTitle('💰 LYX RL SELLS')
-.setDescription('**Cosa vendiamo:**\n\n🎵 **Spotify Premium** Lifetime\n🎬 **Netflix 4K** Lifetime\n🏰 **Disney+ 4K** Lifetime\n📺 **Amazon Prime Video** Lifetime\n\n*e molto altro...*\n\n**Apri un ticket per acquistare** 🎫')
-.setFooter({ text: 'LYX RL • Premium Accounts' })
-.setTimestamp();
-        await message.reply({ embeds: [embed] });
-    }
-
-    if (command === 'ltc' || command === 'litcoin') {
-        try {
-            const qrBuffer = await QRCode.toBuffer(CONFIG.LTC_WALLET);
-            const embed = new EmbedBuilder()
-  .setColor('#345D9D')
-  .setTitle('🪙 Pagamento Litecoin - LYX RL')
-  .setDescription(`**Paga con Litecoin LTC per i tuoi ordini**\n\n> Scansiona il QR code o copia l'indirizzo wallet qui sotto\n> Invia la quantità esatta richiesta\n> Apri un ticket dopo il pagamento con la TX ID`)
-  .addFields(
-                { name: '📬 Indirizzo Wallet LTC', value: `\`\`\`${CONFIG.LTC_WALLET}\`\`\``, inline: false },
-                { name: '⚠️ IMPORTANTE', value: 'Invia SOLO Litecoin LTC a questo indirizzo.\nInviare altre crypto causerà la perdita dei fondi.', inline: false }
-            )
-  .setThumbnail('https://cryptologos.cc/logos/litecoin-ltc-logo.png')
-  .setImage('attachment://qrcode.png')
-  .setFooter({ text: 'LYX RL • Crypto Payments', iconURL: CONFIG.LOGO_URL })
-  .setTimestamp();
-
-            await message.reply({ embeds: [embed], files: [{ attachment: qrBuffer, name: 'qrcode.png' }] });
-        } catch (error) {
-            await message.reply(`**Invia LTC a:** \`${CONFIG.LTC_WALLET}\`\n\n1 LTC = 1000 LitCoin`);
-        }
-    }
-});
-
-client.on('interactionCreate', async interaction => {
     try {
-        if (interaction.isButton() && interaction.customId === 'verify_button') {
-            const role = interaction.guild.roles.cache.find(r => r.name === CONFIG.verifiedRole);
-            if (!role) return interaction.reply({ content: 'Ruolo `Membres` non trovato! Crealo prima.', ephemeral: true });
-            if (interaction.member.roles.cache.has(role.id)) {
-                return interaction.reply({ content: 'Sei già verificato! ✅', ephemeral: true });
-            }
-            await interaction.member.roles.add(role);
-            await interaction.reply({ content: 'Sei stato verificato con successo! ✅ Benvenuto su LYX RL', ephemeral: true });
+        // PING
+        if (command === 'ping') {
+            return message.reply('Pong! 🏓 Bot online');
         }
 
-        if (interaction.isButton() && interaction.customId === 'open_review') {
-            const modal = new ModalBuilder()
-  .setCustomId('review_modal')
-  .setTitle('Lascia una Recensione');
-
-            const stelleInput = new TextInputBuilder()
-  .setCustomId('stelle')
-  .setLabel('Quante stelle dai? (1-5)')
-  .setStyle(TextInputStyle.Short)
-  .setPlaceholder('5')
-  .setRequired(true)
-  .setMaxLength(1);
-
-            const commentoInput = new TextInputBuilder()
-  .setCustomId('commento')
-  .setLabel('Scrivi la tua recensione')
-  .setStyle(TextInputStyle.Paragraph)
-  .setPlaceholder('Servizio perfetto, consegna instantanea...')
-  .setRequired(true)
-  .setMaxLength(1000);
-
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(stelleInput),
-                new ActionRowBuilder().addComponents(commentoInput)
-            );
-
-            await interaction.showModal(modal);
+        // TEST WELCOME
+        if (command === 'testwelcome' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            client.emit('guildMemberAdd', message.member);
+            return message.reply('Test welcome inviato ✅');
         }
 
-        if (interaction.isModalSubmit() && interaction.customId === 'review_modal') {
-            const stelle = interaction.fields.getTextInputValue('stelle');
-            const commento = interaction.fields.getTextInputValue('commento');
-            const reviewChannel = interaction.guild.channels.cache.find(c => c.name === CONFIG.REVIEWS_CHANNEL);
-
-            if (!reviewChannel) {
-                return interaction.reply({ content: `Canale \`${CONFIG.REVIEWS_CHANNEL}\` non trovato!`, ephemeral: true });
-            }
-
-            const stelleInt = parseInt(stelle);
-            const stelleEmoji = '⭐'.repeat(Math.min(Math.max(stelleInt, 1), 5));
-
+        // LTC ADDRESS
+        if (command === 'ltc') {
             const embed = new EmbedBuilder()
-  .setColor('#FFD700')
-  .setTitle(`${stelleEmoji} Nuova Recensione`)
-  .setThumbnail(interaction.user.displayAvatarURL())
-  .addFields(
-                { name: '👤 Utente', value: `${interaction.user}`, inline: true },
-                { name: '⭐ Valutazione', value: `${stelle}/5`, inline: true },
-                { name: '📝 Commento', value: commento, inline: false }
-            )
-  .setFooter({ text: `ID: ${interaction.user.id}` })
-  .setTimestamp();
-
-            await reviewChannel.send({ embeds: [embed] });
-            await interaction.reply({ content: 'Recensione pubblicata! Grazie per il feedback ❤️', ephemeral: true });
+             .setTitle('💰 INDIRIZZO LTC LYX RL')
+             .setDescription(`\`\`\`${LTC_ADDRESS}\`\`\``)
+             .setColor('#345D9D')
+             .setFooter({ text: 'Invia solo LTC a questo indirizzo' });
+            return message.reply({ embeds: [embed] });
         }
 
-        if (interaction.isButton() && interaction.customId === 'refresh_stats') {
-            await interaction.deferUpdate();
-            const uptime = Math.floor(client.uptime / 1000);
-            const days = Math.floor(uptime / 86400);
-            const hours = Math.floor(uptime / 3600) % 24;
-            const minutes = Math.floor(uptime / 60) % 60;
-
+        // SETUP VERIFY
+        if (command === 'setupverify' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const embed = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle('📊 LYX RL Live Statistics')
-  .setDescription('**Statistiche in tempo reale del server LYX RL**')
-  .setThumbnail(CONFIG.LOGO_URL)
-  .addFields(
-                { name: '🤖 Bot Status', value: '`🟢 Online`', inline: true },
-                { name: '📡 Ping', value: `\`${client.ws.ping}ms\``, inline: true },
-                { name: '⏱️ Uptime', value: `\`${days}g ${hours}h ${minutes}m\``, inline: true },
-                { name: '👥 Membri Totali', value: `\`${interaction.guild.memberCount}\``, inline: true },
-                { name: '💬 Canali', value: `\`${interaction.guild.channels.cache.size}\``, inline: true },
-                { name: '🎭 Ruoli', value: `\`${interaction.guild.roles.cache.size}\``, inline: true },
-                { name: '🖥️ Server', value: '`Railway Cloud`', inline: true },
-                { name: '📅 Creazione Server', value: `<t:${Math.floor(interaction.guild.createdTimestamp / 1000)}:R>`, inline: true },
-                { name: '⚡ Node.js', value: `\`${process.version}\``, inline: true }
-            )
-  .setImage(CONFIG.BANNER_URL)
-  .setFooter({ text: `Ultimo aggiornamento`, iconURL: CONFIG.LOGO_URL })
-  .setTimestamp();
+             .setTitle('✅ VERIFICA ACCOUNT')
+             .setDescription('Clicca il pulsante qui sotto per verificarti e accedere al server.')
+             .setColor('#00ff00');
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('refresh_stats').setLabel('Aggiorna Stats').setEmoji('🔄').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setLabel('Website').setEmoji('🌐').setStyle(ButtonStyle.Link).setURL(CONFIG.WEBSITE_URL)
+                new ButtonBuilder().setCustomId('verify_button').setLabel('Verificati').setStyle(ButtonStyle.Success).setEmoji('✅')
             );
-            await interaction.editReply({ embeds: [embed], components: [row] });
+
+            await message.channel.send({ embeds: [embed], components: [row] });
+            return message.delete();
         }
 
-        if (interaction.isButton() && interaction.customId === 'open_ticket') {
-            const selectMenu = new StringSelectMenuBuilder()
-  .setCustomId('select_language')
-  .setPlaceholder('🌍 Select your language / Seleziona la lingua')
-  .addOptions([
-                { label: 'Italiano', value: 'it', emoji: '🇮🇹', description: 'Continua in Italiano' },
-                { label: 'English', value: 'en', emoji: '🇬🇧', description: 'Continue in English' },
-                { label: 'Español', value: 'es', emoji: '🇪🇸', description: 'Continuar en Español' }
-            ]);
-            const row = new ActionRowBuilder().addComponents(selectMenu);
-            await interaction.reply({ content: '**Seleziona la lingua del ticket:**', components: [row], ephemeral: true });
+        // SETUP RECENSIONE
+        if (command === 'setuprecensione' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            const embed = new EmbedBuilder()
+             .setTitle('⭐ LASCIA UNA RECENSIONE')
+             .setDescription('Hai acquistato da noi? Lascia una recensione cliccando il pulsante!')
+             .setColor('#FFD700');
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('review_button').setLabel('Lascia Recensione').setStyle(ButtonStyle.Primary).setEmoji('⭐')
+            );
+
+            await message.channel.send({ embeds: [embed], components: [row] });
+            return message.delete();
         }
 
-        if (interaction.isStringSelectMenu() && interaction.customId === 'select_language') {
-            await interaction.deferUpdate();
-            const lang = interaction.values[0];
-            const t = LANG[lang];
-            const cleanUsername = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
-            const channelName = `ticket-${cleanUsername}`;
+        // SETUP TICKET
+        if (command === 'setupticket' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            const embed = new EmbedBuilder()
+             .setTitle('🎫 APRI UN TICKET')
+             .setDescription('**IT:** Hai bisogno di supporto? Apri un ticket.\n**EN:** Need support? Open a ticket.\n**FR:** Besoin d\'aide? Ouvrez un ticket.')
+             .setColor('#0099ff');
 
-            const existing = interaction.guild.channels.cache.find(c => c.name === channelName);
-            if (existing) {
-                return interaction.followUp({ content: t.alreadyOpen.replace('{channel}', existing), ephemeral: true });
-            }
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('ticket_it').setLabel('Italiano').setStyle(ButtonStyle.Secondary).setEmoji('🇮🇹'),
+                new ButtonBuilder().setCustomId('ticket_en').setLabel('English').setStyle(ButtonStyle.Secondary).setEmoji('🇬🇧'),
+                new ButtonBuilder().setCustomId('ticket_fr').setLabel('Français').setStyle(ButtonStyle.Secondary).setEmoji('🇫🇷')
+            );
 
-            const ticketChannel = await interaction.guild.channels.create({
-                name: channelName,
-                type: ChannelType.GuildText,
-                parent: CONFIG.TICKET_CATEGORY,
-                permissionOverwrites: [
-                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] },
-                    { id: CONFIG.STAFF_ROLE, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
-                ]
-            });
-
-            const embedTicket = new EmbedBuilder()
-  .setColor('#FF0000')
-  .setTitle(`🎫 LYX RL Support - ${lang.toUpperCase()}`)
-  .setDescription(t.welcome.replace('{user}', interaction.user))
-  .setFooter({ text: `User ID: ${interaction.user.id}` })
-  .setTimestamp();
-
-            const reasonMenu = new StringSelectMenuBuilder()
-  .setCustomId(`ticket_reason_${lang}`)
-  .setPlaceholder(t.selectReason)
-  .addOptions([
-                { label: t.reasons.support, value: 'support', emoji: '🆘' },
-                { label: t.reasons.replace, value: 'replace', emoji: '🔄' },
-                { label: t.reasons.notdelivered, value: 'notdelivered', emoji: '📦' },
-                { label: t.reasons.other, value: 'other', emoji: '❓' }
-            ]);
-
-            const closeButton = new ButtonBuilder()
-  .setCustomId('close_ticket')
-  .setLabel(t.close)
-  .setEmoji('🔒')
-  .setStyle(ButtonStyle.Secondary);
-
-            const row1 = new ActionRowBuilder().addComponents(reasonMenu);
-            const row2 = new ActionRowBuilder().addComponents(closeButton);
-
-            await ticketChannel.send({
-                content: `${interaction.user} ${interaction.guild.roles.cache.get(CONFIG.STAFF_ROLE)}`,
-                embeds: [embedTicket],
-                components: [row1, row2]
-            });
-            await interaction.followUp({ content: t.ticketCreated.replace('{channel}', ticketChannel), ephemeral: true });
+            await message.channel.send({ embeds: [embed], components: [row] });
+            return message.delete();
         }
 
-        if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ticket_reason_')) {
-            const lang = interaction.customId.split('_')[2];
-            const reason = interaction.values[0];
-            const t = LANG[lang];
-            const reasonText = { support: t.reasons.support, replace: t.reasons.replace, notdelivered: t.reasons.notdelivered, other: t.reasons.other };
-            await interaction.reply({ content: `✅ **Motivo selezionato:** ${reasonText[reason]}\n\n> Lo staff ti risponderà al più presto. Descrivi il tuo problema qui sotto.`, ephemeral: false });
+        // SETUP STATS
+        if (command === 'setupstats' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            const online = message.guild.members.cache.filter(m => m.presence?.status === 'online').size;
+            const embed = new EmbedBuilder()
+             .setTitle('📊 STATISTICHE SERVER LYX RL')
+             .setDescription(`👥 **Membri Totali:** ${message.guild.memberCount}\n🟢 **Membri Online:** ${online}\n🤖 **Bot:** ${message.guild.members.cache.filter(m => m.user.bot).size}\n📅 **Server Creato:** <t:${parseInt(message.guild.createdTimestamp / 1000)}:R>`)
+             .setColor('#00ff00')
+             .setThumbnail(message.guild.iconURL())
+             .setTimestamp();
+
+            await message.channel.send({ embeds: [embed] });
+            return message.delete();
         }
 
-        if (interaction.isButton() && interaction.customId === 'close_ticket') {
-            await interaction.reply('🔒 Chiusura ticket in corso...');
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
+        // SETUP WEBSITE
+        if (command === 'setupwebsite' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            const embed = new EmbedBuilder()
+             .setTitle('🌐 SITO UFFICIALE LYX RL')
+             .setDescription(`Clicca il pulsante qui sotto per visitare il nostro sito ufficiale.`)
+             .setColor('#5865F2');
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setLabel('Visita il Sito').setStyle(ButtonStyle.Link).setURL(WEBSITE_URL).setEmoji('🔗')
+            );
+
+            await message.channel.send({ embeds: [embed], components: [row] });
+            return message.delete();
         }
 
-        if (interaction.isButton() && interaction.customId === 'buy_product') {
-            await interaction.reply({ content: '**Per acquistare apri un ticket** 🎫', ephemeral: true });
+        // SAY
+        if (command === 'say' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            const text = args.join(' ');
+            if (!text) return message.reply('Scrivi qualcosa dopo `!say` bro');
+            await message.delete();
+            return message.channel.send(text);
         }
 
-        if (interaction.isStringSelectMenu() && interaction.customId === 'rules_menu') {
-            const rules = {
-                general: '**📋 REGOLE GENERALI**\n\n1. Rispetta tutti i membri dello staff e gli utenti\n2. No spam/flood/mass ping\n3. No NSFW o contenuti inappropriati\n4. No pubblicità o self-promo\n5. No discussioni politiche/religiose',
-                chat: '**💬 REGOLE CHAT**\n\n1. No bestemmie o linguaggio eccessivo\n2. No flame o tossicità\n3. Usa i canali giusti per ogni argomento\n4. Rispetta lo staff e le decisioni\n5. No spoiler senza tag',
-                ticket: '**🎫 REGOLE TICKET**\n\n1. Apri ticket solo per problemi reali con ordini\n2. No spam ticket - 1 ticket alla volta\n3. Sii educato con lo staff\n4. Fornisci prove/screen se richieste\n5. I ticket inattivi vengono chiusi dopo 24h',
-                tos: '**📑 TERMINI DI SERVIZIO**\n\n1. Nessun rimborso dopo consegna del prodotto\n2. Garanzia lifetime valida se non cambi password\n3. Ban immediato per chargeback\n4. Non condividere account con altri\n5. Lo staff si riserva il diritto di rifiutare il servizio'
-            };
-            await interaction.reply({ content: rules[interaction.values[0]], ephemeral: true });
+        // BAN
+        if (command === 'ban' && message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers)) {
+            const user = message.mentions.users.first();
+            if (!user) return message.reply('Tagga qualcuno: `!ban @utente motivo`');
+
+            const reason = args.slice(1).join(' ') || 'Nessun motivo';
+            const member = message.guild.members.cache.get(user.id);
+
+            if (!member) return message.reply('Utente non trovato');
+            if (!member.bannable) return message.reply('Non posso bannare questo utente');
+
+            await member.ban({ reason: reason });
+            return message.reply(`🔨 ${user.tag} è stato bannato. Motivo: ${reason}`);
         }
 
     } catch (error) {
-        console.error('Errore:', error);
+        console.error(`Errore comando ${command}:`, error);
+        message.reply('Errore durante il comando. Controlla i log bro').catch(() => {});
+    }
+});
+
+// --- INTERAZIONI ---
+client.on('interactionCreate', async interaction => {
+    try {
+        if (interaction.isButton()) {
+            // VERIFY
+            if (interaction.customId === 'verify_button') {
+                const modal = new ModalBuilder().setCustomId('verify_modal').setTitle('Verifica UID');
+                const uidInput = new TextInputBuilder().setCustomId('uid_input').setLabel('Inserisci il tuo UID').setStyle(TextInputStyle.Short).setRequired(true);
+                const row = new ActionRowBuilder().addComponents(uidInput);
+                modal.addComponents(row);
+                return interaction.showModal(modal);
+            }
+
+            // REVIEW
+            if (interaction.customId === 'review_button') {
+                const modal = new ModalBuilder().setCustomId('review_modal').setTitle('Lascia una Recensione');
+                const starsInput = new TextInputBuilder().setCustomId('stars_input').setLabel('Stelle da 1 a 5').setStyle(TextInputStyle.Short).setRequired(true);
+                const textInput = new TextInputBuilder().setCustomId('text_input').setLabel('Scrivi la tua recensione').setStyle(TextInputStyle.Paragraph).setRequired(true);
+                const linkInput = new TextInputBuilder().setCustomId('link_input').setLabel('Link prova opzionale').setStyle(TextInputStyle.Short).setRequired(false);
+                modal.addComponents(
+                    new ActionRowBuilder().addComponents(starsInput),
+                    new ActionRowBuilder().addComponents(textInput),
+                    new ActionRowBuilder().addComponents(linkInput)
+                );
+                return interaction.showModal(modal);
+            }
+
+            // TICKET
+            if (interaction.customId.startsWith('ticket_')) {
+                const lang = interaction.customId.split('_')[1];
+                const ticketName = `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                const existing = interaction.guild.channels.cache.find(ch => ch.name === ticketName);
+                if (existing) return interaction.reply({ content: 'Hai già un ticket aperto!', ephemeral: true });
+
+                const channel = await interaction.guild.channels.create({
+                    name: ticketName,
+                    type: 0,
+                    permissionOverwrites: [
+                        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
+                        { id: STAFF_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                    ]
+                });
+
+                const vouchesChannel = interaction.guild.channels.cache.find(ch => ch.name === VOUCHES_CHANNEL_NAME);
+                const vouchesTag = vouchesChannel? `<#${vouchesChannel.id}>` : '#vouches';
+
+                const msg = {
+                    it: `Ciao ${interaction.user}, lo staff ti risponderà a breve.\nGuarda le recensioni su ${vouchesTag}`,
+                    en: `Hi ${interaction.user}, staff will reply soon.\nCheck reviews at ${vouchesTag}`,
+                    fr: `Salut ${interaction.user}, le staff vous répondra bientôt.\nVoir avis sur ${vouchesTag}`
+                };
+
+                await channel.send(msg[lang] || msg['it']);
+                return interaction.reply({ content: `Ticket creato: ${channel}`, ephemeral: true });
+            }
+        }
+
+        if (interaction.isModalSubmit()) {
+            // VERIFY SUBMIT
+            if (interaction.customId === 'verify_modal') {
+                await interaction.deferReply({ ephemeral: true });
+                const uid = interaction.fields.getTextInputValue('uid_input');
+                const role = interaction.guild.roles.cache.get(VERIFIED_ROLE_ID);
+                if (!role) return interaction.editReply({ content: 'Ruolo Verificato non trovato!' });
+
+                await interaction.member.roles.add(role);
+
+                const logs = interaction.guild.channels.cache.find(ch => ch.name === LOGS_CHANNEL_NAME);
+                if (logs) logs.send(`✅ ${interaction.user.tag} verificato con UID: ${uid}`);
+
+                return interaction.editReply({ content: `✅ Verificato! UID: ${uid}` });
+            }
+
+            // REVIEW SUBMIT
+            if (interaction.customId === 'review_modal') {
+                await interaction.deferReply({ ephemeral: true });
+                const stars = parseInt(interaction.fields.getTextInputValue('stars_input'));
+                const text = interaction.fields.getTextInputValue('text_input');
+                const link = interaction.fields.getTextInputValue('link_input') || 'Nessun allegato';
+
+                if (isNaN(stars) || stars < 1 || stars > 5) return interaction.editReply({ content: 'Le stelle devono essere un numero da 1 a 5' });
+
+                const vouchesChannel = interaction.guild.channels.cache.find(ch => ch.name === VOUCHES_CHANNEL_NAME);
+                if (!vouchesChannel) return interaction.editReply({ content: 'Canale vouches non trovato' });
+
+                const embed = new EmbedBuilder()
+                 .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
+                 .setTitle(`${'⭐'.repeat(stars)} ${stars}/5`)
+                 .setDescription(text)
+                 .addFields({ name: 'Prova', value: link })
+                 .setColor('#FFD700')
+                 .setTimestamp();
+
+                await vouchesChannel.send({ embeds: [embed] });
+                return interaction.editReply({ content: 'Recensione inviata! Grazie 💚' });
+            }
+        }
+    } catch (error) {
+        console.error('Errore interazione:', error);
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply({ content: 'Errore, riprova bro' }).catch(() => {});
+        } else {
+            await interaction.reply({ content: 'Errore, riprova bro', ephemeral: true }).catch(() => {});
+        }
     }
 });
 
