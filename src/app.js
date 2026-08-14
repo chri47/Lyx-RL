@@ -380,7 +380,7 @@ client.on('messageCreate', async message => {
         if (command === 'setupstock' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const embed = new EmbedBuilder()
 .setTitle('📦 LYX RL PREMIUM STOCK')
-.setDescription('**Prodotti Disponibili Ora**\n\n🎮 **Spotify Premium** - €2.50 Lifetime | Stock: 15\n📺 **Netflix 4K** - €4.00 Lifetime | Stock: 8\n🎬 **Disney+** - €3.00 Lifetime | Stock: 12\n🎵 **Apple Music** - €2.00 Lifetime | Stock: 20\n\n✅ **Consegna Istantanea**\n🔒 **Garanzia Lifetime**\n💳 **Pagamenti: LTC/PayPal**')
+.setDescription('**Prodotti Disponibili Ora. Ma molti altri prodotti sul sito**\n\n🎮 **Spotify Premium** - €5 Lifetime | Stock: 0\n📺 **Netflix ** - €3.00 Lifetime | Stock: 50\n🎬 **Disney+** - €3.00 Lifetime | Stock: 1500\n🎥 **YOUTUBE LIFETIME** - €3,50 Lifetime | Stock: 70\n\n✅ **Consegna Istantanea**\n🔒 **Garanzia Lifetime**\n💳 **Pagamenti: LTC/PayPal**')
 .setImage(BANNER_URL)
 .setColor(LYX_RED)
 .setFooter({ text: 'LYX RL • Premium Stock', iconURL: LOGO_URL });
