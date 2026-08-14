@@ -17,7 +17,7 @@ app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 
 // CONFIG - I TUOI DATI INSERITI
 const CONFIG = {
-    TICKET_CATEGORY: '1530144375575679187',
+    TICKET_CATEGORY: '1530144246055829626',
     STAFF_ROLE: '1530144125599612978',
     WEBSITE_URL: 'https://lyxrlservices.mysellauth.com/',
     BANNER_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428', // BANNER ROSSO PERMANENTE
