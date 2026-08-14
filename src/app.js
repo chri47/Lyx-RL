@@ -1,7 +1,7 @@
-const { Client, GatewayIntentBits, ChannelType, PermissionsBitField, Events, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputStyle, SlashCommandBuilder, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, ChannelType, PermissionsBitField, Events, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, SlashCommandBuilder, REST, Routes } = require('discord.js');
 const express = require('express');
 
-console.log('[BOOT] LYX RL Modular Bot v8 - COMPLETO');
+console.log('[BOOT] LYX RL Modular Bot v8 - FIX CRASH');
 
 const client = new Client({
     intents: [
@@ -23,11 +23,11 @@ const REVIEW_CHANNEL_NAME = '🔍・vouches';
 const WEBSITE_URL = 'https://lyxrlservices.mysellauth.com/';
 const ORDER_CHANNEL_ID = '1530144020154552380';
 const ORDER_WEBHOOK_SECRET = 'lyx_rl_secret_2026';
-const GUILD_ID = '1530144020154552380'; // OBBLIGATORIO PER /recensione
+const GUILD_ID = '1530144020154552380'; // METTI ID SERVER QUI
 const STAFF_MEMBERS = [
     { name: 'iDanger', id: '1327759048858140794' },
     { name: 'iCocoo', id: '1143252603342438490' },
-    { name: 'Lyx RL', id: '1530147790687174677' }
+    { name: 'Lyt RL', id: '1530147790687174677' }
 ];
 // ============================
 
@@ -36,24 +36,10 @@ const commands = [
     new SlashCommandBuilder()
 .setName('recensione')
 .setDescription('Lascia una recensione per lo staff LYX RL')
-.addStringOption(option =>
-            option.setName('staff')
-          .setDescription('Scegli lo staff da recensire')
-          .setRequired(true)
-          .addChoices(...STAFF_MEMBERS.map(s => ({ name: s.name, value: s.id }))))
-.addStringOption(option =>
-            option.setName('motivo')
-          .setDescription('Descrivi la tua esperienza')
-          .setRequired(true))
 ].map(command => command.toJSON());
 
 client.once(Events.ClientReady, async c => {
     console.log(`[ONLINE] ${c.user.tag} V8 ATTIVO`);
-
-    if (GUILD_ID === '1530144020154552380') {
-        console.log('[WARN] METTI GUILD_ID nel config per attivare /recensione');
-        return;
-    }
 
     const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
     try {
@@ -81,7 +67,7 @@ client.on(Events.MessageCreate, async message => {
 \`\`\`
 
 > 🛡️ **𝗦𝘂𝗽𝗼𝗿𝘁𝗼 𝗣𝗿𝗶𝗼𝗿𝗶𝘁𝗮𝗿𝗶𝗼 𝟮𝟰/𝟳**
-> 🔒 **𝗧𝗶𝗰𝗸𝗲𝘁 𝟭𝟬𝟬% 𝗣𝗿𝗶𝘃𝗮𝘁𝗶 & 𝗦𝗶𝗰𝘂𝗿𝗶**
+> 🔒 **𝗧𝗶𝗰𝗸𝗲𝘁 𝟭𝟬% 𝗣𝗿𝗶𝘃𝗮𝘁𝗶 & 𝗦𝗶𝗰𝘂𝗿𝗶**
 > ⚡ **𝗥𝗶𝘀𝗽𝗼𝘀𝘁𝗮 𝗚𝗮𝗿𝗮𝗻𝘁𝗶𝘁𝗮 < 𝟱𝗺**
 
 \`\`\`diff
@@ -98,7 +84,7 @@ client.on(Events.MessageCreate, async message => {
 .setPlaceholder('⚡ 𝗦𝗲𝗹𝗲𝘇𝗶𝗼𝗻𝗮 𝗰𝗮𝘁𝗲𝗴𝗼𝗿𝗶𝗮 𝗽𝗿𝗲𝗺𝗶𝘂𝗺...')
 .addOptions([
                 { label: '𝗗𝗼𝗺𝗮𝗻𝗱𝗲 & 𝗜𝗻𝗳𝗼', description: 'Informazioni generali su servizi e prodotti', value: 'questions', emoji: '❓' },
-                { label: '𝗦𝘂𝗽𝗽𝗼𝗿𝘁𝗼 𝗧𝗲𝗰𝗻𝗶𝗰𝗼 𝗩𝗜𝗣', description: 'Problemi tecnici, accesso, configurazione', value: 'general', emoji: '🛠️' },
+                { label: '𝗦𝘂𝗽𝗼𝗿𝘁𝗼 𝗧𝗲𝗰𝗻𝗶𝗰𝗼 𝗩𝗜𝗣', description: 'Problemi tecnici, accesso, configurazione', value: 'general', emoji: '🛠️' },
                 { label: '𝗢𝗿𝗱𝗶𝗻𝗲 𝗡𝗼𝗻 𝗥𝗶𝗰𝗲𝘃𝘂𝘁𝗼', description: 'Non hai ricevuto il tuo acquisto', value: 'product', emoji: '📦' },
                 { label: '𝗖𝗼𝗻𝘀𝗲𝗴𝗻𝗮 𝗣𝗿𝗶𝗼𝗿𝗶𝘁𝗮𝗿𝗶𝗮', description: 'Richiedi consegna manuale immediata', value: 'delivery', emoji: '🚀' },
                 { label: '𝗥𝗶𝗺𝗯𝗼𝗿𝘀𝗼/𝗦𝗼𝘀𝘁𝗶𝘁𝘂𝘇𝗶𝗼𝗻𝗲', description: 'Garanzia e assistenza post-vendita', value: 'replacement', emoji: '💎' }
@@ -177,10 +163,10 @@ client.on(Events.MessageCreate, async message => {
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-        .setLabel('𝙑𝙄𝙎𝙄𝙏𝘼 𝙄𝙇 𝙎𝙄𝙏𝙊')
-        .setStyle(ButtonStyle.Link)
-        .setURL(WEBSITE_URL)
-        .setEmoji('🌐')
+       .setLabel('𝙑𝙄𝙎𝙄𝙏𝘼 𝙄𝙇 𝙎𝙄𝙏𝙊')
+       .setStyle(ButtonStyle.Link)
+       .setURL(WEBSITE_URL)
+       .setEmoji('🌐')
         );
 
         await message.channel.send({ embeds: [embed], components: [row] }).catch(() => {});
@@ -215,7 +201,7 @@ client.on(Events.MessageCreate, async message => {
               { name: '🟢 𝗢𝗻𝗹𝗶𝗻𝗲', value: `\`\`\`yaml\n${onlineMembers}\n\`\`\``, inline: true },
               { name: '👤 𝗨𝘁𝗲𝗻𝘁𝗶', value: `\`\`\`yaml\n${humans}\n\`\`\``, inline: true },
               { name: '🤖 𝗕𝗼𝘁', value: `\`\`\`yaml\n${bots}\`\`\``, inline: true },
-              { name: '💎 𝗕𝗼𝘀𝘁 𝗟𝗶𝘃𝗲𝗹𝗹𝗼', value: `\`\`\`yaml\nLivello ${boostLevel}\n\`\`\``, inline: true },
+              { name: '💎 𝗕𝗼𝗼𝘀𝘁 𝗟𝗶𝘃𝗲𝗹𝗹𝗼', value: `\`\`\`yaml\nLivello ${boostLevel}\n\`\`\``, inline: true },
               { name: '🚀 𝗕𝗼𝗼𝘀𝘁 𝗧𝗼𝘁𝗮𝗹𝗶', value: `\`\`\`yaml\n${boostCount}\n\`\`\``, inline: true }
           )
 .setFooter({ text: `𝙍𝙞𝙘𝙝𝙞𝙚𝙨𝙩𝙤 𝙙𝙖 ${message.author.tag}`, iconURL: message.author.displayAvatarURL() })
@@ -230,31 +216,91 @@ client.on(Events.MessageCreate, async message => {
 // ========== INTERAZIONI ==========
 client.on(Events.InteractionCreate, async interaction => {
     try {
-        // /recensione
+        // /recensione STEP 1
         if (interaction.isChatInputCommand() && interaction.commandName === 'recensione') {
-            const staffId = interaction.options.getString('staff');
-            const motivo = interaction.options.getString('motivo');
+            const embed = new EmbedBuilder()
+           .setColor(0xFF0000)
+           .setTitle('⭐ 𝙎𝙄𝙎𝙏𝙀𝙈𝘼 𝙍𝙀𝘾𝙀𝙉𝙎𝙄𝙊𝙉𝙄 𝙋𝙍𝙀𝙈𝙄𝙐𝙈')
+           .setDescription('**Step 1/2:** Seleziona lo staff che vuoi recensire dal menu qui sotto.')
+           .setFooter({ text: '𝙇𝙔𝙓 𝙍𝙇 𝙍𝙚𝙫𝙞𝙚𝙬𝙨' });
+
+            const staffMenu = new StringSelectMenuBuilder()
+           .setCustomId('recensione_staff_select')
+           .setPlaceholder('👑 Scegli lo staff...')
+           .addOptions(STAFF_MEMBERS.map(s => ({ label: s.name, value: s.id, emoji: '👑' })));
+
+            const row = new ActionRowBuilder().addComponents(staffMenu);
+            await interaction.reply({ embeds: [embed], components: [row], flags: 64 });
+            return;
+        }
+
+        // /recensione STEP 2
+        if (interaction.isStringSelectMenu() && interaction.customId === 'recensione_staff_select') {
+            const staffId = interaction.values[0];
             const staffMember = STAFF_MEMBERS.find(s => s.id === staffId);
 
+            const modal = new ModalBuilder()
+           .setCustomId(`recensione_modal_${staffId}`)
+           .setTitle(`Recensione per ${staffMember.name}`);
+
+            const reasonInput = new TextInputBuilder()
+           .setCustomId('recensione_reason')
+           .setLabel('Descrivi la tua esperienza')
+           .setStyle(TextInputStyle.Paragraph)
+           .setPlaceholder('Staff gentile, veloce, mi ha aiutato con...')
+           .setRequired(true)
+           .setMaxLength(1000);
+
+            const votoInput = new TextInputBuilder()
+           .setCustomId('recensione_voto')
+           .setLabel('Voto da 1 a 5')
+           .setStyle(TextInputStyle.Short)
+           .setPlaceholder('5')
+           .setRequired(true)
+           .setMaxLength(1);
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(reasonInput),
+                new ActionRowBuilder().addComponents(votoInput)
+            );
+
+            await interaction.showModal(modal);
+            return;
+        }
+
+        // /recensione STEP 3
+        if (interaction.isModalSubmit() && interaction.customId.startsWith('recensione_modal_')) {
+            const staffId = interaction.customId.split('_')[2];
+            const staffMember = STAFF_MEMBERS.find(s => s.id === staffId);
+            const reason = interaction.fields.getTextInputValue('recensione_reason');
+            const voto = interaction.fields.getTextInputValue('recensione_voto');
+            const votoNum = parseInt(voto);
+
+            if (isNaN(votoNum) || votoNum < 1 || votoNum > 5) {
+                return interaction.reply({ content: '❌ Il voto deve essere un numero da 1 a 5.', flags: 64 });
+            }
+
+            const stars = '⭐'.repeat(votoNum) + '☆'.repeat(5 - votoNum);
+
             const reviewEmbed = new EmbedBuilder()
-    .setColor(0xFF0000)
-    .setTitle('⭐ 𝙉𝙐𝙊𝙑𝘼 𝙍𝙀𝘾𝙀𝙉𝙎𝙄𝙊𝙉𝙀 𝙋𝙍𝙀𝙈𝙄𝙐𝙈')
-    .setThumbnail(interaction.user.displayAvatarURL())
-    .setDescription(`
+       .setColor(0xFF0000)
+       .setTitle('⭐ 𝙉𝙐𝙊𝙑𝘼 𝙍𝙀𝘾𝙀𝙉𝙎𝙄𝙊𝙉𝙀 𝙋𝙍𝙀𝙈𝙄𝙐𝙈')
+       .setThumbnail(interaction.user.displayAvatarURL())
+       .setDescription(`
 \`\`\`ansi
 [2;31m[1;31m╔═══════════════════════════════════════╗
 ║ [1;37m𝙁𝙀𝘿𝘽𝘼𝘾𝙆 𝘾𝙇𝙄𝙀𝙉𝙏𝙀 𝙑𝙄𝙋[0m[1;31m ║
 ╚═══════════════════════════════════════╝[0m
 \`\`\`
 `)
-    .addFields(
+       .addFields(
                 { name: '👤 𝗖𝗹𝗶𝗲𝗻𝘁𝗲', value: `${interaction.user}`, inline: true },
                 { name: '👑 𝗦𝘁𝗮𝗳𝗳', value: `<@${staffId}>`, inline: true },
-                { name: '📅 𝗗𝗮𝘁𝗮', value: `<t:${Math.floor(Date.now()/1000)}:F>`, inline: true },
-                { name: '💬 𝗥𝗲𝗰𝗲𝗻𝘀𝗶𝗼𝗻𝗲', value: `\`\`\`${motivo}\`\`\``, inline: false }
+                { name: '🌟 𝗩𝗼𝘁𝗼', value: `${stars} **${voto}/5**`, inline: true },
+                { name: '💬 𝗥𝗲𝗰𝗲𝗻𝘀𝗶𝗼𝗻𝗲', value: `\`\`\`${reason}\`\`\``, inline: false }
             )
-    .setFooter({ text: '𝙇𝙔𝙓 𝙍𝙇 𝙍𝙚𝙫𝙞𝙚𝙬𝙨 𝙎𝙮𝙨𝙩𝙚𝙢 • 𝙂𝙧𝙖𝙯𝙞𝙚 𝙥𝙚𝙧 𝙞𝙡 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠', iconURL: interaction.guild.iconURL() })
-    .setTimestamp();
+       .setFooter({ text: '𝙇𝙔𝙓 𝙍𝙇 𝙍𝙚𝙫𝙞𝙚𝙬𝙨 𝙎𝙮𝙨𝙩𝙚𝙢 • 𝙂𝙧𝙖𝙯𝙞𝙚 𝙥𝙚𝙧 𝙞𝙡 𝙛𝙚𝙙𝙗𝙖𝙘𝙠', iconURL: interaction.guild.iconURL() })
+       .setTimestamp();
 
             const reviewChannel = interaction.guild.channels.cache.find(c => c.name.includes(REVIEW_CHANNEL_NAME));
             if (reviewChannel) {
@@ -277,7 +323,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const existing = interaction.guild.channels.cache.find(c => c.topic?.includes(`UserID: ${interaction.user.id}`));
             if (existing) return interaction.editReply(`❌ **𝗛𝗮𝗶 𝗴𝗶à 𝘂𝗻 𝘁𝗶𝗰𝗸𝗲𝘁 𝗩𝗜𝗣 𝗮𝗽𝗲𝗿𝘁𝗼:** ${existing}`).catch(() => {});
 
-            const typeNames = { questions: '𝗗𝗼𝗺𝗮𝗻𝗱𝗲 & 𝗜𝗻𝗳𝗼', general: '𝗦𝘂𝗽𝗽𝗼𝗿𝘁𝗼 𝗧𝗲𝗰𝗻𝗶𝗰𝗼 𝗩𝗜𝗣', product: '𝗢𝗿𝗱𝗶𝗻𝗲 𝗡𝗼𝗻 𝗥𝗶𝗰𝗲𝘃𝘂𝘁𝗼', delivery: '𝗖𝗼𝗻𝘀𝗲𝗴𝗻𝗮 𝗣𝗿𝗶𝗼𝗿𝗶𝘁𝗮𝗿𝗶𝗮', replacement: '𝗥𝗶𝗺𝗯𝗼𝗿𝘀𝗼/𝗦𝗼𝘀𝘁𝗶𝘁𝘂𝘇𝗶𝗼𝗻𝗲' };
+            const typeNames = { questions: '𝗗𝗼𝗺𝗮𝗻𝗱𝗲 & 𝗜𝗻𝗳𝗼', general: '𝗦𝘂𝗽𝗼𝗿𝘁𝗼 𝗧𝗲𝗰𝗻𝗶𝗰𝗼 𝗩𝗜𝗣', product: '𝗢𝗿𝗱𝗶𝗻𝗲 𝗡𝗼𝗻 𝗥𝗶𝗰𝗲𝘃𝘂𝘁𝗼', delivery: '𝗖𝗼𝗻𝘀𝗲𝗴𝗻𝗮 𝗣𝗿𝗶𝗼𝗿𝗶𝘁𝗮𝗿𝗶𝗮', replacement: '𝗥𝗶𝗺𝗯𝗼𝗿𝘀𝗼/𝗦𝗼𝘀𝘁𝗶𝘁𝘂𝘇𝗶𝗼𝗻𝗲' };
             const typeColors = { questions: 0x3498DB, general: 0xFF0000, product: 0xE67E22, delivery: 0x9B59B6, replacement: 0x1ABC9C };
 
             const overwrites = [
@@ -296,9 +342,9 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.editReply(`✅ **𝗧𝗶𝗰𝗸𝗲𝘁 𝗣𝗿𝗲𝗺𝗶𝘂𝗺 𝗰𝗿𝗲𝗮𝘁𝗼:** ${channel}`).catch(() => {});
 
             const ticketEmbed = new EmbedBuilder()
-    .setColor(typeColors[ticketType])
-    .setTitle(`🔥 𝙏𝙄𝘾𝙆𝙀𝙏 𝙑𝙄𝙋 𝘼𝙋𝙀𝙍𝙏𝙊`)
-    .setDescription(`
+   .setColor(typeColors[ticketType])
+   .setTitle(`🔥 𝙏𝙄𝘾𝙆𝙀𝙏 𝙑𝙄𝙋 𝘼𝙋𝙀𝙍𝙏𝙊`)
+   .setDescription(`
 \`\`\`ansi
 [2;31m[1;31m╔═══════════════════════════════════════╗
 ║ [1;37m𝘽𝙀𝙉𝙑𝙀𝙉𝙐𝙏𝙊 𝙉𝙀𝙇 𝙎𝙐𝙋𝙊𝙍𝙏𝙊 𝙑𝙄𝙋[0m[1;31m ║
@@ -314,7 +360,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 ▬▬▬▬▬▬▬▬▬▬▬
 `)
-    .addFields(
+   .addFields(
                     { name: '👤 𝗖𝗹𝗶𝗲𝗻𝘁𝗲 𝗩𝗜𝗣', value: `\`\`\`${interaction.user.tag}\`\`\``, inline: true },
                     { name: '📂 𝗥𝗲𝗽𝗮𝗿𝘁𝗼', value: `\`\`\`${typeNames[ticketType]}\`\`\``, inline: true },
                     { name: '🕐 𝗔𝗽𝗲𝗿𝘁𝗼', value: `<t:${Math.floor(Date.now()/1000)}:R>`, inline: true },
@@ -322,9 +368,9 @@ client.on(Events.InteractionCreate, async interaction => {
                     { name: '⚡ 𝗣𝗿𝗶𝗼𝗿𝗶𝘁à', value: '`𝙈𝘼𝙎𝙄𝙈𝘼`', inline: true },
                     { name: '🛡️ 𝗦𝘁𝗮𝘁𝘂𝘀', value: '`𝘼𝙏𝙄𝙑𝙊`', inline: true }
                 )
-    .setThumbnail(interaction.user.displayAvatarURL())
-    .setFooter({ text: `𝙇𝙔𝙓 𝙍𝙇 𝙋𝙧𝙚𝙢𝙞𝙪𝙢 𝙎𝙪𝙥𝙤𝙧𝙩 • 𝙄𝘿: ${interaction.user.id}` })
-    .setTimestamp();
+   .setThumbnail(interaction.user.displayAvatarURL())
+   .setFooter({ text: `𝙇𝙔𝙓 𝙍𝙇 𝙋𝙧𝙚𝙢𝙞𝙪𝙢 𝙎𝙪𝙥𝙤𝙧𝙩 • 𝙄𝘿: ${interaction.user.id}` })
+   .setTimestamp();
 
             const closeButton = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('ticket_close').setLabel('𝗖𝗵𝗶𝘂𝗱𝗶 𝗧𝗶𝗰𝗸𝗲𝘁').setStyle(ButtonStyle.Danger).setEmoji('🔒'),
@@ -354,55 +400,4 @@ client.on(Events.InteractionCreate, async interaction => {
             }
             if (interaction.customId === 'copy_wallet_btn') {
                 await interaction.reply({
-                    content: `📋 **𝗪𝗮𝗹𝗲𝘁 𝗟𝗧𝗖 𝗖𝗼𝗽𝗶𝗮𝗯𝗶𝗹𝗲:**\n\`\`\`yaml\n${LTC_WALLET}\n\`\`\`\n*𝗣𝗖: 𝗖𝗹𝗶𝗰𝗮 𝟯 𝘃𝗼𝗹𝘁𝗲 𝘀𝘂𝗹 𝘁𝗲𝘀𝘁𝗼 𝗽𝗲𝗿 𝘀𝗲𝗹𝗲𝘇𝗶𝗼𝗻𝗮𝗿𝗲 𝘁𝘂𝘁𝗼*\n*𝗠𝗼𝗯𝗶𝗹𝗲: 𝗧𝗶𝗲𝗻𝗶 𝗽𝗿𝗲𝗺𝘂𝘁𝗼 𝘀𝘂𝗹 𝘁𝗲𝘀𝘁𝗼*`,
-                    flags: 64
-                });
-                return;
-            }
-        }
-
-    } catch (error) {
-        console.error('[ERRORE INTERACTION]', error);
-        if (interaction.deferred || interaction.replied) {
-            await interaction.editReply({ content: '❌ 𝗘𝗿𝗼𝗿𝗲 𝘀𝗶𝘀𝘁𝗲𝗺𝗮 𝗽𝗿𝗲𝗺𝗶𝘂𝗺. 𝗥𝗶𝗽𝗿𝗼𝘃𝗮.' }).catch(() => {});
-        } else {
-            await interaction.reply({ content: '❌ 𝗘𝗿𝗼𝗿𝗲 𝘀𝗶𝘀𝘁𝗲𝗺𝗮 𝗽𝗿𝗲𝗺𝗶𝘂𝗺. 𝗥𝗶𝗽𝗿𝗼𝘃𝗮.', flags: 64 }).catch(() => {});
-        }
-    }
-});
-
-// ========== WEBHOOK SERVER PER ORDINI DAL SITO ==========
-const app = express();
-app.use(express.json());
-
-app.post('/order', async (req, res) => {
-    if (req.headers['x-webhook-secret']!== ORDER_WEBHOOK_SECRET) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const { customer, product, price, order_id, anonymous } = req.body;
-
-    if (!product ||!price) {
-        return res.status(400).json({ error: 'Missing product or price' });
-    }
-
-    try {
-        const orderChannel = await client.channels.fetch(ORDER_CHANNEL_ID).catch(() => null);
-        if (!orderChannel) {
-            return res.status(500).json({ error: 'Order channel not found' });
-        }
-
-        const embed = new EmbedBuilder()
-    .setColor(0x00FF00)
-    .setTitle('💰 𝙉𝙐𝙊𝙑𝙊 𝙊𝙍𝘿𝙄𝙉𝙀 𝙍𝙄𝘾𝙀𝙑𝙐𝙏𝙊')
-    .setThumbnail('https://cdn-icons-png.flaticon.com/512/3144/3144456.png')
-    .setDescription(`
-\`\`\`ansi
-[2;32m[1;32m╔═══════════════════════════════════════╗
-║ [1;37m𝙆𝘼-𝘾𝙃𝙄𝙉𝙂! 𝙑𝙀𝙉𝘿𝙄𝙏𝘼 𝘾𝙊𝙈𝙋𝙇𝙀𝙏𝘼𝙏𝘼[0m[1;32m ║
-╚═══════════════════════════════════════╝[0m
-\`\`\`
-`)
-    .addFields(
-                { name: '👤 𝗖𝗹𝗶𝗲𝗻𝘁𝗲', value: anonymous? '`𝘼𝙣𝙤𝙣𝙞𝙢𝙤`' : `\`\`\`${customer || 'N/A'}\`\`\``, inline: true },
-                { name: '📦 𝗣𝗿𝗼
+                    content: `📋 **𝗪𝗮𝗹𝗲𝘁 𝗟𝗧𝗖 𝗖𝗼𝗽𝗶𝗮𝗯𝗶𝗹𝗲:**\n\`\`\`yaml\n${LTC_WALLET}\n\`\`\`\n*𝗣𝗖:
