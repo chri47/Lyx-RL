@@ -1,24 +1,26 @@
 const { Client, GatewayIntentBits, ChannelType, PermissionsBitField, Events, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, SlashCommandBuilder, REST, Routes } = require('discord.js');
 
-console.log('[BOOT] LYX RL Modular Bot v5 - PREMIUM PLUS COMPLETO');
+console.log('[BOOT] LYX RL Modular Bot v7 - WEB + STATS');
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences // AGGIUNTO PER!stats
     ],
     partials: [Partials.Channel, Partials.Message, Partials.User]
 });
 
 // ========== CONFIG - MODIFICA QUI ==========
-const TICKET_CATEGORY_ID = null; // ID categoria ticket
-const STAFF_ROLE_ID = null; // ID ruolo staff per ticket e recensioni
+const TICKET_CATEGORY_ID = null;
+const STAFF_ROLE_ID = null;
 const LTC_WALLET = 'ltc1q4cunrt3ahlcktl7gdn9svq9uwenvzkacmgyq35';
-const BANNER_URL = 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428'; // CARICA TU UN BANNER SU DISCORD E METTI IL LINK
-const REVIEW_CHANNEL_NAME = '🔍・vouches'; // Nome canale dove mandare le recensioni
-const STAFF_MEMBERS = [ // AGGIUNGI GLI ID REALI DELLO STAFF
+const BANNER_URL = 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428';
+const REVIEW_CHANNEL_NAME = '🔍・vouches';
+const WEBSITE_URL = 'https://tuosito.com'; // METTI IL TUO SITO QUI
+const STAFF_MEMBERS = [
     { name: 'iDanger', id: '1327759048858140794' },
     { name: 'iCocoo', id: '1143252603342438490' },
     { name: 'Lyt RL', id: '1530147790687174677' }
@@ -28,17 +30,17 @@ const STAFF_MEMBERS = [ // AGGIUNGI GLI ID REALI DELLO STAFF
 // ========== REGISTRA SLASH COMMANDS ==========
 const commands = [
     new SlashCommandBuilder()
-    .setName('recensione')
-    .setDescription('Lascia una recensione per lo staff LYX RL')
-    .addStringOption(option =>
+   .setName('recensione')
+   .setDescription('Lascia una recensione per lo staff LYX RL')
+   .addStringOption(option =>
             option.setName('staff')
-              .setDescription('Scegli lo staff da recensire')
-              .setRequired(true)
-              .addChoices(...STAFF_MEMBERS.map(s => ({ name: s.name, value: s.id }))))
-    .addStringOption(option =>
+             .setDescription('Scegli lo staff da recensire')
+             .setRequired(true)
+             .addChoices(...STAFF_MEMBERS.map(s => ({ name: s.name, value: s.id }))))
+   .addStringOption(option =>
             option.setName('motivo')
-              .setDescription('Descrivi la tua esperienza')
-              .setRequired(true))
+             .setDescription('Descrivi la tua esperienza')
+             .setRequired(true))
 ].map(command => command.toJSON());
 
 client.once(Events.ClientReady, async c => {
@@ -61,21 +63,21 @@ client.on(Events.MessageCreate, async message => {
     if (message.content === '!setup-ticket' && message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
 
         const embed = new EmbedBuilder()
-    .setColor(0xFF0000)
-    .setTitle('🔥 LYX RL | SUPPORTO PREMIUM')
-    .setDescription('**Benvenuto nel centro assistenza ufficiale**\n\n▬▬▬\n\n> 🛡️ **Supporto Prioritario 24/7**\n> 🔒 **Ticket 100% Privati**\n> ⚡ **Risposta Garantita**\n\n▬▬▬\n\n**Seleziona la categoria del tuo problema:**')
-    .setImage(BANNER_URL)
-    .setThumbnail(message.guild.iconURL())
-    .setFooter({
+   .setColor(0xFF0000)
+   .setTitle('🔥 LYX RL | SUPPORTO PREMIUM')
+   .setDescription('**Benvenuto nel centro assistenza ufficiale**\n\n▬▬▬\n\n> 🛡️ **Supporto Prioritario 24/7**\n> 🔒 **Ticket 100% Privati**\n> ⚡ **Risposta Garantita**\n\n▬▬▬\n\n**Seleziona la categoria del tuo problema:**')
+   .setImage(BANNER_URL)
+   .setThumbnail(message.guild.iconURL())
+   .setFooter({
               text: 'LYX RL Services • Premium Support',
               iconURL: client.user.displayAvatarURL()
           })
-    .setTimestamp();
+   .setTimestamp();
 
         const menu = new StringSelectMenuBuilder()
-    .setCustomId('ticket_select')
-    .setPlaceholder('⚡ Seleziona categoria premium...')
-    .addOptions([
+   .setCustomId('ticket_select')
+   .setPlaceholder('⚡ Seleziona categoria premium...')
+   .addOptions([
                 { label: 'Domande & Info', description: 'Informazioni generali su servizi e prodotti', value: 'questions', emoji: '❓' },
                 { label: 'Supporto Tecnico VIP', description: 'Problemi tecnici, accesso, configurazione', value: 'general', emoji: '🛠️' },
                 { label: 'Ordine Non Ricevuto', description: 'Non hai ricevuto il tuo acquisto', value: 'product', emoji: '📦' },
@@ -89,48 +91,103 @@ client.on(Events.MessageCreate, async message => {
         return;
     }
 
-    // COMANDO!LTC PREMIUM - QR PICCOLO + COPIA FUNZIONANTE
+    // COMANDO!LTC PREMIUM
     if (message.content === '!ltc') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply({ content: '❌ Accesso negato. Solo Staff LYX RL.', flags: 64 }).then(m => setTimeout(() => m.delete().catch(()=>{}), 3000));
         }
 
         const embed = new EmbedBuilder()
-  .setColor(0x000000)
-  .setAuthor({
+ .setColor(0x000000)
+ .setAuthor({
               name: 'LYX RL | PAGAMENTO UFFICIALE',
               iconURL: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png'
           })
-  .setTitle('💎 LITECOIN [LTC] - GATEWAY PREMIUM')
-  .setDescription('```diff\n- ATTENZIONE: INVIARE SOLO LTC SU QUESTO INDIRIZZO\n- ALTRI TOKEN VERRANNO PERSI PER SEMPRE\n```\n**Invia l\'importo esatto per attivazione immediata.**')
-  .setThumbnail('https://cryptologos.cc/logos/litecoin-ltc-logo.png')
-  .addFields(
+ .setTitle('💎 LITECOIN [LTC] - GATEWAY PREMIUM')
+ .setDescription('```diff\n- ATTENZIONE: INVIARE SOLO LTC SU QUESTO INDIRIZZO\n- ALTRI TOKEN VERRANNO PERSI PER SEMPRE\n```\n**Invia l\'importo esatto per attivazione immediata.**')
+ .setThumbnail('https://cryptologos.cc/logos/litecoin-ltc-logo.png')
+ .addFields(
               { name: '▬▬▬ WALLET ▬▬▬', value: `\`\`\`${LTC_WALLET}\`\`\``, inline: false },
               { name: '🌐 Network', value: '`Litecoin`', inline: true },
               { name: '⚡ Speed', value: '`Instant`', inline: true },
               { name: '🛡️ Security', value: '`Verified`', inline: true }
           )
-  .setImage(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=litecoin:${LTC_WALLET}&bgcolor=000000&color=FF0000`)
-  .setFooter({
+ .setImage(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=litecoin:${LTC_WALLET}&bgcolor=000000&color=FF0000`)
+ .setFooter({
               text: 'LYX RL Premium • Scansiona o Copia',
               iconURL: client.user.displayAvatarURL()
           })
-  .setTimestamp();
+ .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-      .setCustomId('delete_wallet_msg')
-      .setLabel('Elimina')
-      .setStyle(ButtonStyle.Danger)
-      .setEmoji('🗑️'),
+     .setCustomId('delete_wallet_msg')
+     .setLabel('Elimina')
+     .setStyle(ButtonStyle.Danger)
+     .setEmoji('🗑️'),
             new ButtonBuilder()
-      .setCustomId('copy_wallet_btn')
-      .setLabel('Copia Wallet')
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji('📋')
+     .setCustomId('copy_wallet_btn')
+     .setLabel('Copia Wallet')
+     .setStyle(ButtonStyle.Primary)
+     .setEmoji('📋')
         );
 
         await message.channel.send({ embeds: [embed], components: [row] }).catch(() => {});
+        await message.delete().catch(() => {});
+        return;
+    }
+
+    //!web - NUOVO
+    if (message.content === '!web') {
+        const embed = new EmbedBuilder()
+.setColor(0xFF0000)
+.setTitle('🌐 SITO UFFICIALE LYX RL')
+.setDescription('**Clicca il pulsante qui sotto per visitare il nostro sito!**\n\n> 🔥 Prodotti esclusivi\n> ⚡ Consegna immediata\n> 🛡️ Supporto premium')
+.setThumbnail(message.guild.iconURL())
+.setFooter({ text: 'LYX RL Services', iconURL: client.user.displayAvatarURL() })
+.setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+           .setLabel('Visita il Sito')
+           .setStyle(ButtonStyle.Link)
+           .setURL(WEBSITE_URL)
+           .setEmoji('🌐')
+        );
+
+        await message.channel.send({ embeds: [embed], components: [row] }).catch(() => {});
+        await message.delete().catch(() => {});
+        return;
+    }
+
+    //!stats - NUOVO
+    if (message.content === '!stats') {
+        await message.guild.members.fetch(); // Forza cache
+
+        const totalMembers = message.guild.memberCount;
+        const onlineMembers = message.guild.members.cache.filter(m => m.presence?.status === 'online' || m.presence?.status === 'idle' || m.presence?.status === 'dnd').size;
+        const bots = message.guild.members.cache.filter(m => m.user.bot).size;
+        const humans = totalMembers - bots;
+        const boostLevel = message.guild.premiumTier;
+        const boostCount = message.guild.premiumSubscriptionCount;
+
+        const embed = new EmbedBuilder()
+.setColor(0xFF0000)
+.setTitle('📊 STATISTICHE SERVER LYX RL')
+.setThumbnail(message.guild.iconURL())
+.setDescription(`**Dati in tempo reale del server**`)
+.addFields(
+              { name: '👥 Membri Totali', value: `\`\`\`${totalMembers}\`\`\``, inline: true },
+              { name: '🟢 Online', value: `\`\`\`${onlineMembers}\`\`\``, inline: true },
+              { name: '👤 Utenti', value: `\`\`\`${humans}\`\`\``, inline: true },
+              { name: '🤖 Bot', value: `\`\`\`${bots}\`\`\``, inline: true },
+              { name: '💎 Boost Livello', value: `\`\`\`Livello ${boostLevel}\`\`\``, inline: true },
+              { name: '🚀 Boost Totali', value: `\`\`\`${boostCount}\`\`\``, inline: true }
+          )
+.setFooter({ text: `Richiesto da ${message.author.tag}`, iconURL: message.author.displayAvatarURL() })
+.setTimestamp();
+
+        await message.channel.send({ embeds: [embed] }).catch(() => {});
         await message.delete().catch(() => {});
         return;
     }
@@ -139,24 +196,24 @@ client.on(Events.MessageCreate, async message => {
 // ========== INTERAZIONI ==========
 client.on(Events.InteractionCreate, async interaction => {
     try {
-        // SLASH COMMAND /recensione
+        // /recensione
         if (interaction.isChatInputCommand() && interaction.commandName === 'recensione') {
             const staffId = interaction.options.getString('staff');
             const motivo = interaction.options.getString('motivo');
             const staffMember = STAFF_MEMBERS.find(s => s.id === staffId);
 
             const reviewEmbed = new EmbedBuilder()
-        .setColor(0xFF0000)
-        .setTitle('⭐ NUOVA RECENSIONE PREMIUM')
-        .setThumbnail(interaction.user.displayAvatarURL())
-        .addFields(
+       .setColor(0xFF0000)
+       .setTitle('⭐ NUOVA RECENSIONE PREMIUM')
+       .setThumbnail(interaction.user.displayAvatarURL())
+       .addFields(
                 { name: '👤 Cliente', value: `${interaction.user}`, inline: true },
                 { name: '👑 Staff', value: `<@${staffId}>`, inline: true },
                 { name: '📅 Data', value: `<t:${Math.floor(Date.now()/1000)}:F>`, inline: true },
                 { name: '💬 Recensione', value: `\`\`\`${motivo}\`\`\``, inline: false }
             )
-        .setFooter({ text: 'LYX RL Reviews System • Grazie per il feedback', iconURL: interaction.guild.iconURL() })
-        .setTimestamp();
+       .setFooter({ text: 'LYX RL Reviews System • Grazie per il feedback', iconURL: interaction.guild.iconURL() })
+       .setTimestamp();
 
             const reviewChannel = interaction.guild.channels.cache.find(c => c.name.includes(REVIEW_CHANNEL_NAME));
             if (reviewChannel) {
@@ -198,10 +255,10 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.editReply(`✅ **Ticket Premium creato:** ${channel}`).catch(() => {});
 
             const ticketEmbed = new EmbedBuilder()
-        .setColor(typeColors[ticketType])
-        .setTitle(`🔥 TICKET VIP APERTO`)
-        .setDescription(`**Benvenuto <@${interaction.user.id}>**\n\n▬▬▬\n\nSei in contatto con il **Team LYX RL Premium**.\nDescrivi il tuo problema in dettaglio per assistenza prioritaria.\n\n▬▬▬`)
-        .addFields(
+       .setColor(typeColors[ticketType])
+       .setTitle(`🔥 TICKET VIP APERTO`)
+       .setDescription(`**Benvenuto <@${interaction.user.id}>**\n\n▬▬▬\n\nSei in contatto con il **Team LYX RL Premium**.\nDescrivi il tuo problema in dettaglio per assistenza prioritaria.\n\n▬▬▬`)
+       .addFields(
                     { name: '👤 Cliente VIP', value: `${interaction.user.tag}`, inline: true },
                     { name: '📂 Reparto', value: `${typeNames[ticketType]}`, inline: true },
                     { name: '🕐 Aperto', value: `<t:${Math.floor(Date.now()/1000)}:R>`, inline: true },
@@ -209,9 +266,9 @@ client.on(Events.InteractionCreate, async interaction => {
                     { name: '⚡ Priorità', value: '`MASSIMA`', inline: true },
                     { name: '🛡️ Status', value: '`ATTIVO`', inline: true }
                 )
-        .setThumbnail(interaction.user.displayAvatarURL())
-        .setFooter({ text: `LYX RL Premium Support • ID: ${interaction.user.id}` })
-        .setTimestamp();
+       .setThumbnail(interaction.user.displayAvatarURL())
+       .setFooter({ text: `LYX RL Premium Support • ID: ${interaction.user.id}` })
+       .setTimestamp();
 
             const closeButton = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('ticket_close').setLabel('Chiudi Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒'),
