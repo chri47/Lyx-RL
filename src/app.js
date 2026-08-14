@@ -266,8 +266,8 @@ client.on('messageCreate', async message => {
         // SETUP TICKET LUXURY CON 5 LINGUE
         if (command === 'setupticket' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             const embed = new EmbedBuilder()
-.setTitle('🎫 SUPPORTO PREMIUM LYX RL')
-.setDescription('**Apri un ticket privato e il nostro staff ti risponderà entro 5 minuti.**\n\n🇮🇹 **Italiano** - Supporto 24/7\n🇬🇧 **English** - 24/7 Support\n🇫🇷 **Français** - Support 24/7\n🇵🇹 **Português** - Suporte 24/7\n🇩🇪 **Deutsch** - 24/7 Support\n\n⚡ **Tempo medio risposta: 45 sec**\n💎 **Supporto prioritario per verificati**')
+.setTitle('`🎫 SUPPORTO PREMIUM LYX RL`')
+.setDescription('*Apri un ticket privato e il nostro staff ti risponderà entro 5 minuti.*\n\n🇮🇹 `Italiano` - Supporto 24/7\n🇬🇧 `English` - 24/7 Support\n🇫🇷 `Français` - Support 24/7\n🇵🇹 `Português` - Suporte 24/7\n🇩🇪 `Deutsch` - 24/7 Support\n\n⚡ ||Tempo medio risposta: 45 sec||\n💎 ||Supporto prioritario per verificati||')
 .setImage(BANNER_URL)
 .setColor(LYX_RED)
 .setFooter({ text: 'LYX RL • Premium Support 24/7', iconURL: LOGO_URL });
