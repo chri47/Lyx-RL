@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, ChannelType, PermissionsBitField, Events, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 
-console.log('[BOOT] LYX RL Modular Bot v2 - FANCY MODE');
+console.log('[BOOT] LYX RL Modular Bot v3 - ALL IN ONE');
 
 const client = new Client({
     intents: [
@@ -12,30 +12,35 @@ const client = new Client({
     partials: [Partials.Channel, Partials.Message, Partials.User]
 });
 
+// ========== CONFIG ==========
 const TICKET_CATEGORY_ID = null; // Metti l'ID di una categoria se vuoi tutti i ticket sotto la stessa categoria
 const STAFF_ROLE_ID = null; // Metti l'ID del ruolo staff se vuoi che vedano tutti i ticket
+const LTC_WALLET = 'ltc1q4cunrt3ahlcktl7gdn9svq9uwenvzkacmgyq35'; // IL TUO WALLET
+// ============================
 
 client.once(Events.ClientReady, c => {
     console.log(`[ONLINE] ${c.user.tag} PRONTO CON STILE`);
 });
 
+// ========== COMANDI MESSAGGIO ==========
 client.on(Events.MessageCreate, async message => {
-    if (message.author.bot || !message.guild) return;
+    if (message.author.bot ||!message.guild) return;
 
+    // COMANDO SETUP TICKET
     if (message.content === '!setup-ticket' && message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        
+
         const embed = new EmbedBuilder()
-            .setColor(0x5865F2)
-            .setTitle('🎫 Centro Assistenza LYX RL')
-            .setDescription('**Hai bisogno di supporto?**\n\nSeleziona dal menu qui sotto la categoria che descrive meglio il tuo problema.\n\n> ⏱️ Rispondiamo entro 24h\n> 🔒 Solo tu e lo staff potete vedere il ticket')
-            .setThumbnail(message.guild.iconURL())
-            .setFooter({ text: 'LYX RL Support', iconURL: client.user.displayAvatarURL() })
-            .setTimestamp();
+           .setColor(0x5865F2)
+           .setTitle('🎫 Centro Assistenza LYX RL')
+           .setDescription('**Hai bisogno di supporto?**\n\nSeleziona dal menu qui sotto la categoria che descrive meglio il tuo problema.\n\n> ⏱️ Rispondiamo entro 24h\n> 🔒 Solo tu e lo staff potete vedere il ticket')
+           .setThumbnail(message.guild.iconURL())
+           .setFooter({ text: 'LYX RL Support', iconURL: client.user.displayAvatarURL() })
+           .setTimestamp();
 
         const menu = new StringSelectMenuBuilder()
-            .setCustomId('ticket_select')
-            .setPlaceholder('📂 Seleziona una categoria...')
-            .addOptions([
+           .setCustomId('ticket_select')
+           .setPlaceholder('📂 Seleziona una categoria...')
+           .addOptions([
                 {
                     label: 'Domande Generali',
                     description: 'Informazioni sul server, eventi, regole',
@@ -75,11 +80,69 @@ client.on(Events.MessageCreate, async message => {
         console.log('[CMD] Pannello ticket FANCY creato');
         return;
     }
+
+    // COMANDO!LTC BELLO - SOLO STAFF
+    if (message.content === '!ltc') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Solo lo staff può mostrare i wallet.', flags: 64 }).then(m => setTimeout(() => m.delete().catch(()=>{}), 3000));
+        }
+
+        const embed = new EmbedBuilder()
+        .setColor(0x345D9D)
+        .setAuthor({
+              name: 'LYX RL Services | Metodo di Pagamento',
+              iconURL: 'https://cryptologos.cc/logos/litecoin-ltc-logo.png'
+          })
+        .setTitle('💎 Litecoin (LTC)')
+        .setDescription('**Per completare il pagamento, invia l\'importo esatto a questo indirizzo.**\n\n> ⚠️ Invia solo LTC a questo indirizzo.\n> ⚠️ Inviare altri token comporta la perdita dei fondi.')
+        .setThumbnail('https://cryptologos.cc/logos/litecoin-ltc-logo.png')
+        .addFields(
+              {
+                  name: '📬 Indirizzo Wallet',
+                  value: `\`\`\`${LTC_WALLET}\`\`\``
+              },
+              {
+                  name: '🔗 Network',
+                  value: 'Litecoin Mainnet',
+                  inline: true
+              },
+              {
+                  name: '⚡ Conferme',
+                  value: '6+ Richieste',
+                  inline: true
+              },
+              {
+                  name: '👑 Proprietario',
+                  value: `${message.guild.name}`,
+                  inline: true
+              }
+          )
+        .setImage(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=litecoin:${LTC_WALLET}`)
+        .setFooter({
+              text: 'Scansiona il QR Code o clicca l\'indirizzo per copiarlo • LYX RL',
+              iconURL: client.user.displayAvatarURL()
+          })
+        .setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+            .setCustomId('delete_wallet_msg')
+            .setLabel('Elimina Messaggio')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji('🗑️')
+        );
+
+        await message.channel.send({ embeds: [embed], components: [row] }).catch(() => {});
+        await message.delete().catch(() => {});
+        console.log(`[PAYMENT] LTC wallet mostrato da ${message.author.tag}`);
+        return;
+    }
 });
 
+// ========== INTERAZIONI PULSANTI E MENU ==========
 client.on(Events.InteractionCreate, async interaction => {
     try {
-        // GESTIONE MENU DROPDOWN
+        // GESTIONE MENU DROPDOWN TICKET
         if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_select') {
             if (!interaction.guild) {
                 return interaction.reply({ content: '❌ Usa i ticket nel server!', flags: 64 }).catch(() => {});
@@ -89,7 +152,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
             const ticketType = interaction.values[0];
             const ticketName = `🎫・${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 90);
-            
+
             const existing = interaction.guild.channels.cache.find(c => c.topic?.includes(`UserID: ${interaction.user.id}`));
             if (existing) {
                 return interaction.editReply(`❌ Hai già un ticket aperto: ${existing}`).catch(() => {});
@@ -97,7 +160,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
             const typeNames = {
                 questions: 'Domande Generali',
-                general: 'Supporto Tecnico', 
+                general: 'Supporto Tecnico',
                 product: 'Prodotto Non Ricevuto',
                 delivery: 'Consegna Manuale',
                 replacement: 'Sostituzione/Rimborso'
@@ -124,28 +187,28 @@ client.on(Events.InteractionCreate, async interaction => {
             await interaction.editReply(`✅ Ticket creato: ${channel}`).catch(() => {});
 
             const ticketEmbed = new EmbedBuilder()
-                .setColor(0x00FF00)
-                .setTitle(`Ticket Aperto: ${typeNames[ticketType]}`)
-                .setDescription(`Ciao <@${interaction.user.id}>! 👋\n\nLo staff ti risponderà il prima possibile.\nNel frattempo descrivi il tuo problema in dettaglio.`)
-                .addFields(
+               .setColor(0x00FF00)
+               .setTitle(`Ticket Aperto: ${typeNames[ticketType]}`)
+               .setDescription(`Ciao <@${interaction.user.id}>! 👋\n\nLo staff ti risponderà il prima possibile.\nNel frattempo descrivi il tuo problema in dettaglio.`)
+               .addFields(
                     { name: '👤 Utente', value: `${interaction.user.tag}`, inline: true },
                     { name: '📂 Categoria', value: `${typeNames[ticketType]}`, inline: true },
                     { name: '🕐 Aperto', value: `<t:${Math.floor(Date.now()/1000)}:R>`, inline: true }
                 )
-                .setFooter({ text: `ID: ${interaction.user.id}` })
-                .setTimestamp();
+               .setFooter({ text: `ID: ${interaction.user.id}` })
+               .setTimestamp();
 
             const closeButton = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
-                    .setCustomId('ticket_close')
-                    .setLabel('Chiudi Ticket')
-                    .setStyle(ButtonStyle.Danger)
-                    .setEmoji('🔒'),
+                   .setCustomId('ticket_close')
+                   .setLabel('Chiudi Ticket')
+                   .setStyle(ButtonStyle.Danger)
+                   .setEmoji('🔒'),
                 new ButtonBuilder()
-                    .setCustomId('ticket_claim')
-                    .setLabel('Claim Ticket')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('✋')
+                   .setCustomId('ticket_claim')
+                   .setLabel('Claim Ticket')
+                   .setStyle(ButtonStyle.Primary)
+                   .setEmoji('✋')
             );
 
             await channel.send({ content: `<@${interaction.user.id}>`, embeds: [ticketEmbed], components: [closeButton] }).catch(() => {});
@@ -167,6 +230,14 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.channel.send({ embeds: [new EmbedBuilder().setColor(0xFFFF00).setDescription(`✋ ${interaction.user} ha preso in carico il ticket.`)] }).catch(() => {});
                 return;
             }
+
+            if (interaction.customId === 'delete_wallet_msg') {
+                if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+                    return interaction.reply({ content: '❌ Solo lo staff può eliminarlo.', flags: 64 });
+                }
+                await interaction.message.delete().catch(() => {});
+                return;
+            }
         }
 
     } catch (error) {
@@ -179,6 +250,7 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 });
 
+// ========== ANTI CRASH ==========
 process.on('unhandledRejection', error => console.error('[CRASH]', error));
 process.on('uncaughtException', error => console.error('[CRASH]', error));
 
