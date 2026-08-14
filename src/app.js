@@ -3,159 +3,205 @@ import {
     ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, ActivityType
 } from 'discord.js';
 import { createCanvas, loadImage } from 'canvas';
+import 'dotenv/config';
 
 const CONFIG = {
-    TICKET_CATEGORY: '1530144246055829626',
-    STAFF_ROLE: '1530144125599612978',
-    RULES_CHANNEL: '1537664486033596446',
-    VERIFY_ROLE_ID: '1530144188333817897',
-    BANNER_URL: 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a7fc69d&is=6a7e751d&hm=8db49fa8387aac86eadf61006bf726c4a633805f35c598496e2bf8554db60dc1&=&format=webp&quality=lossless&width=768&height=428'
+    welcomeChannel: 'welcome',
+    verifiedRole: 'Membres',
+    ticketCategory: 'TICKETS',
+    logsChannel: 'logs',
+    websiteUrl: 'https://lyxrl.com' // METTI IL TUO SITO QUI
 };
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
+        GatewayIntentBits.GuildMessageReactions
     ]
 });
 
-client.once('ready', async () => {
+client.once('clientReady', () => {
     console.log(`✅ Bot online come ${client.user.tag}`);
-    client.user.setActivity('LYX RL Services', { type: ActivityType.Playing });
+    client.user.setActivity('LYX RL Services', { type: ActivityType.Watching });
 
-    const commands = await client.application.commands.set([
-        { name: 'ping', description: 'Mostra il ping del bot' },
-        {
-            name: 'createticket',
-            description: 'Apri un ticket di supporto',
-            options: [{ name: 'topic', description: 'Motivo del ticket', type: 3, required: true }]
-        },
-        { name: 'setupverify', description: 'Crea il messaggio di verifica con pulsante' }
-    ]);
-    console.log(`✅ Slash commands registrati: ${commands.size}`);
+    // REGISTRA TUTTI I COMANDI SLASH /
+    const commands = [
+        { name: 'ping', description: 'Controlla se il bot è online' },
+        { name: 'setupverify', description: 'Manda il pannello di verifica' },
+        { name: 'createticket', description: 'Apri un ticket di supporto' },
+        { name: 'setupstock', description: 'Manda il pannello stock LYX RL' },
+        { name: 'setupticket', description: 'Manda il pannello per aprire ticket' },
+        { name: 'setupweb', description: 'Manda il pannello del sito web' },
+        { name: 'website', description: 'Link al sito ufficiale LYX RL' }
+    ];
+    client.application.commands.set(commands);
+    console.log(`Slash commands registrati: ${commands.length}`);
 });
 
+// WELCOME CON IMMAGINE
 client.on('guildMemberAdd', async (member) => {
-    console.log(`Nuovo membro: ${member.user.tag}`);
-    const welcomeChannel = member.guild.channels.cache.find(ch => ch.name === 'welcome');
-    if (!welcomeChannel) return;
+    const channel = member.guild.channels.cache.find(ch => ch.name === CONFIG.welcomeChannel);
+    if (!channel) return console.log('Canale welcome non trovato');
+
     try {
-        const canvas = createCanvas(1200, 600);
+        const canvas = createCanvas(1024, 500);
         const ctx = canvas.getContext('2d');
-        const background = await loadImage(CONFIG.BANNER_URL);
-        ctx.drawImage(background, 0, 0, 1200, 600);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, 1200, 600);
+
+        const background = await loadImage('https://i.imgur.com/0N3fZ3s.png');
+        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+        ctx.font = '60px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Benvenuto,`, 512, 360);
+        ctx.fillText(`${member.user.username}!`, 512, 430);
+
+        ctx.beginPath();
+        ctx.arc(512, 180, 128, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.clip();
+
         const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 256 }));
-        const x = 600, y = 200, r = 100;
-        ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.clip();
-        ctx.drawImage(avatar, x - r, y - r, r * 2, r * 2); ctx.restore();
-        ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2);
-        ctx.lineWidth = 8; ctx.strokeStyle = '#ff0000'; ctx.stroke();
-        ctx.font = 'bold 60px Sans'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-        ctx.fillText(`Welcome ${member.user.username}`, 600, 380);
-        ctx.font = '30px Sans'; ctx.fillStyle = '#cccccc';
-        ctx.fillText(`You are member #${member.guild.memberCount}`, 600, 440);
-        ctx.font = '25px Sans'; ctx.fillText(`Please check <#${CONFIG.RULES_CHANNEL}>`, 600, 500);
-        await welcomeChannel.send({
-            content: `🎉 ${member} è entrato in LYX RL Services!`,
+        ctx.drawImage(avatar, 384, 52, 256, 256);
+
+        await channel.send({
+            content: `Benvenuto ${member} su LYX RL Services!`,
             files: [{ attachment: canvas.toBuffer(), name: 'welcome.png' }]
         });
-    } catch (err) { console.error('Errore Canvas:', err); }
-});
-
-client.on('interactionCreate', async (interaction) => {
-    console.log(`Interazione ricevuta: ${interaction.type} da ${interaction.user.tag}`);
-    try {
-        if (interaction.isButton() && interaction.customId === 'verify_button') {
-            await interaction.deferReply({ ephemeral: true });
-            const role = interaction.guild.roles.cache.get(CONFIG.VERIFY_ROLE_ID);
-            if (!role) return interaction.editReply('❌ Ruolo Membres non trovato.');
-            if (interaction.member.roles.cache.has(CONFIG.VERIFY_ROLE_ID)) {
-                return interaction.editReply('✅ Sei già verificato!');
-            }
-            await interaction.member.roles.add(role);
-            return interaction.editReply('✅ **Verificato!** Benvenuto in LYX RL Services 🎮');
-        }
-
-        if (interaction.isButton() && interaction.customId === 'close_ticket') {
-            if (!interaction.member.roles.cache.has(CONFIG.STAFF_ROLE)) {
-                return interaction.reply({ content: '❌ Solo lo staff può chiudere i ticket.', ephemeral: true });
-            }
-            await interaction.reply('🔒 Il ticket verrà chiuso tra 5 secondi...');
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
-        }
-
-        if (interaction.isCommand()) {
-            console.log(`Comando: /${interaction.commandName}`);
-            if (interaction.commandName === 'ping') {
-                await interaction.reply(`🏓 Pong! Latenza: ${client.ws.ping}ms`);
-            }
-            if (interaction.commandName === 'createticket') {
-                await interaction.deferReply({ ephemeral: true });
-                const topic = interaction.options.getString('topic');
-                const ticketChannel = await interaction.guild.channels.create({
-                    name: `ticket-${interaction.user.username}`,
-                    type: ChannelType.GuildText,
-                    parent: CONFIG.TICKET_CATEGORY,
-                    permissionOverwrites: [
-                        { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                        { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                        { id: CONFIG.STAFF_ROLE, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
-                    ]
-                });
-                const embed = new EmbedBuilder()
-                 .setTitle('🎫 Ticket Aperto')
-                 .setDescription(`**Utente:** ${interaction.user}\n**Motivo:** ${topic}`)
-                 .setColor(0xff0000).setTimestamp();
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('close_ticket').setLabel('Chiudi Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒')
-                );
-                await ticketChannel.send({ content: `<@&${CONFIG.STAFF_ROLE}> Nuovo ticket!`, embeds: [embed], components: [row] });
-                await interaction.editReply(`✅ Ticket creato: ${ticketChannel}`);
-            }
-            if (interaction.commandName === 'setupverify') {
-                if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-                    return interaction.reply({ content: '❌ Solo gli admin.', ephemeral: true });
-                }
-                const embed = new EmbedBuilder()
-                 .setTitle('🔐 Verifica LYX RL Services')
-                 .setDescription(`**Clicca il pulsante qui sotto per verificarti**\n\nLeggi le regole in <#${CONFIG.RULES_CHANNEL}> prima di cliccare.`)
-                 .setColor(0x00FF00).setImage(CONFIG.BANNER_URL);
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('verify_button').setLabel('Verificami').setStyle(ButtonStyle.Success).setEmoji('✅')
-                );
-                await interaction.channel.send({ embeds: [embed], components: [row] });
-                await interaction.reply({ content: '✅ Messaggio di verifica creato!', ephemeral: true });
-            }
-        }
     } catch (error) {
-        console.error('ERRORE INTERACTION:', error);
-        const errorMsg = '❌ Errore. Il bot ha i permessi Gestisci Ruoli? Il mio ruolo è sopra a Membres?';
-        if (interaction.deferred || interaction.replied) {
-            await interaction.editReply(errorMsg);
-        } else {
-            await interaction.reply({ content: errorMsg, ephemeral: true });
-        }
+        console.error('Errore welcome:', error);
+        await channel.send(`Benvenuto ${member} su LYX RL Services!`);
     }
 });
 
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-    console.log(`Messaggio ricevuto: ${message.content}`);
-    if (!message.content.startsWith('!setupverify')) return;
-    if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
-    const embed = new EmbedBuilder()
-     .setTitle('🔐 Verifica LYX RL Services')
-     .setDescription(`**Clicca il pulsante qui sotto per verificarti**\n\nLeggi le regole in <#${CONFIG.RULES_CHANNEL}> prima di cliccare.`)
-     .setColor(0x00FF00).setImage(CONFIG.BANNER_URL);
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('verify_button').setLabel('Verificami').setStyle(ButtonStyle.Success).setEmoji('✅')
-    );
-    await message.channel.send({ embeds: [embed], components: [row] });
-    await message.delete();
+// GESTIONE COMANDI SLASH /
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.isChatInputCommand()) {
+
+        if (interaction.commandName === 'ping') {
+            const sent = await interaction.reply({ content: 'Calcolo ping...', fetchReply: true });
+            interaction.editReply(`Pong! ${sent.createdTimestamp - interaction.createdTimestamp}ms`);
+        }
+
+        if (interaction.commandName === 'setupverify') {
+            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                return interaction.reply({ content: 'Solo gli admin possono usare questo comando.', ephemeral: true });
+            }
+            const embed = new EmbedBuilder()
+               .setTitle('✅ Verifica LYX RL')
+               .setDescription('Clicca il pulsante qui sotto per verificarti e accedere al server.')
+               .setColor('#00FF7F');
+            const button = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('verify_button').setLabel('Verificami').setStyle(ButtonStyle.Success).setEmoji('✅')
+            );
+            await interaction.channel.send({ embeds: [embed], components: [button] });
+            await interaction.reply({ content: 'Pannello verifica creato!', ephemeral: true });
+        }
+
+        if (interaction.commandName === 'createticket') {
+            const category = interaction.guild.channels.cache.find(c => c.name === CONFIG.ticketCategory && c.type === ChannelType.GuildCategory);
+            const channel = await interaction.guild.channels.create({
+                name: `ticket-${interaction.user.username}`,
+                type: ChannelType.GuildText,
+                parent: category?.id,
+                permissionOverwrites: [
+                    { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+                ],
+            });
+            const embed = new EmbedBuilder()
+               .setTitle('🎫 Ticket Aperto')
+               .setDescription(`Ciao ${interaction.user}, descrivi il tuo problema.`)
+               .setColor('#0099FF');
+            await channel.send({ content: `${interaction.user}`, embeds: [embed] });
+            await interaction.reply({ content: `Ticket creato: ${channel}`, ephemeral: true });
+        }
+
+        if (interaction.commandName === 'setupstock') {
+            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                return interaction.reply({ content: 'Solo gli admin possono usare questo comando.', ephemeral: true });
+            }
+            const embed = new EmbedBuilder()
+               .setTitle('📦 Stock LYX RL Services')
+               .setDescription('**Prodotti Disponibili:**\n\n🚗 **Accounts** - GTA, Steam, Epic\n🔑 **Keys** - Windows, Office\n💎 **Boost** - Server & Account\n\n*Clicca sotto per aprire un ticket e ordinare*')
+               .setColor('#FFD700');
+            const button = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('stock_ticket').setLabel('Ordina Ora').setStyle(ButtonStyle.Primary).setEmoji('🛒')
+            );
+            await interaction.channel.send({ embeds: [embed], components: [button] });
+            await interaction.reply({ content: 'Pannello stock creato!', ephemeral: true });
+        }
+
+        if (interaction.commandName === 'setupticket') {
+            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                return interaction.reply({ content: 'Solo gli admin possono usare questo comando.', ephemeral: true });
+            }
+            const embed = new EmbedBuilder()
+               .setTitle('🎫 Supporto LYX RL')
+               .setDescription('Hai bisogno di aiuto?\nClicca il pulsante qui sotto per aprire un ticket.\n\n*Lo staff ti risponderà il prima possibile*')
+               .setColor('#0099FF');
+            const button = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('open_ticket').setLabel('Apri Ticket').setStyle(ButtonStyle.Primary).setEmoji('🎫')
+            );
+            await interaction.channel.send({ embeds: [embed], components: [button] });
+            await interaction.reply({ content: 'Pannello ticket creato!', ephemeral: true });
+        }
+
+        if (interaction.commandName === 'setupweb') {
+            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                return interaction.reply({ content: 'Solo gli admin possono usare questo comando.', ephemeral: true });
+            }
+            const embed = new EmbedBuilder()
+               .setTitle('🌐 Sito Ufficiale LYX RL')
+               .setDescription('Visita il nostro sito per vedere tutti i prodotti e le offerte!')
+               .setColor('#5865F2');
+            const button = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setLabel('Vai al Sito').setStyle(ButtonStyle.Link).setURL(CONFIG.websiteUrl).setEmoji('🔗')
+            );
+            await interaction.channel.send({ embeds: [embed], components: [button] });
+            await interaction.reply({ content: 'Pannello web creato!', ephemeral: true });
+        }
+
+        if (interaction.commandName === 'website') {
+            const embed = new EmbedBuilder()
+               .setTitle('🌐 LYX RL Services')
+               .setDescription(`**Sito Ufficiale:**\n${CONFIG.websiteUrl}`)
+               .setColor('#5865F2');
+            await interaction.reply({ embeds: [embed] });
+        }
+    }
+
+    // GESTIONE PULSANTI
+    if (interaction.isButton()) {
+        if (interaction.customId === 'verify_button') {
+            const role = interaction.guild.roles.cache.find(r => r.name === CONFIG.verifiedRole);
+            if (!role) return interaction.reply({ content: 'Ruolo Membres non trovato!', ephemeral: true });
+            await interaction.member.roles.add(role);
+            await interaction.reply({ content: 'Sei stato verificato con successo!', ephemeral: true });
+        }
+
+        if (interaction.customId === 'open_ticket' || interaction.customId === 'stock_ticket') {
+            const category = interaction.guild.channels.cache.find(c => c.name === CONFIG.ticketCategory && c.type === ChannelType.GuildCategory);
+            const channel = await interaction.guild.channels.create({
+                name: `ticket-${interaction.user.username}`,
+                type: ChannelType.GuildText,
+                parent: category?.id,
+                permissionOverwrites: [
+                    { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+                ],
+            });
+            const embed = new EmbedBuilder()
+               .setTitle('🎫 Ticket Aperto')
+               .setDescription(`Ciao ${interaction.user}, descrivi la tua richiesta.`)
+               .setColor('#0099FF');
+            await channel.send({ content: `${interaction.user}`, embeds: [embed] });
+            await interaction.reply({ content: `Ticket creato: ${channel}`, ephemeral: true });
+        }
+    }
 });
 
 client.login(process.env.DISCORD_TOKEN);
