@@ -2,7 +2,7 @@
   "type": "module",
   "name": "lyx-rl-bot",
   "version": "1.0.0",
-  "description": "LYX RL Discord Bot",
+  "description": "",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
