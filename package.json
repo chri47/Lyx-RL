@@ -1,17 +1,14 @@
 {
+  "type": "module",
   "name": "lyx-rl-bot",
   "version": "1.0.0",
-  "description": "LYX RL Premium Bot",
-  "main": "src/app.js",
+  "description": "LYX RL Discord Bot",
+  "main": "app.js",
   "scripts": {
-    "start": "node src/app.js"
+    "start": "node app.js"
   },
   "dependencies": {
     "discord.js": "^14.14.1",
-    "express": "^4.18.2",
     "canvas": "^2.11.2"
-  },
-  "engines": {
-    "node": "18.x"
   }
 }
