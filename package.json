@@ -1,6 +1,7 @@
 {
   "name": "lyx-rl-bot",
   "version": "1.0.0",
+  "description": "Bot LYX RL con verify, ticket, vouches, welcome",
   "main": "src/app.js",
   "scripts": {
     "start": "node src/app.js"
