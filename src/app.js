@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionsBitField, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
-const translate = require('translate'); // NUOVA LIBRERIA
+const translate = require('translate');
 
 const client = new Client({
     intents: [
@@ -40,24 +40,20 @@ client.once('ready', async () => {
     const commands = [
         new SlashCommandBuilder().setName('talk').setDescription('Traduci e invia un messaggio').toJSON(),
         new SlashCommandBuilder()
-         .setName('clean')
-         .setDescription('Elimina tutti i messaggi del canale')
-         .addIntegerOption(option =>
-                option.setName('quantità')
-                  .setDescription('Quanti messaggi eliminare (max 100)')
-                  .setRequired(false))
-         .toJSON()
+        .setName('clean')
+        .setDescription('Elimina messaggi dal canale')
+        .addIntegerOption(option => option.setName('quantità').setDescription('Quanti messaggi eliminare 1-100').setMinValue(1).setMaxValue(100).setRequired(false))
+        .toJSON()
     ];
 
     try {
         await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
-        console.log('✅ Comandi /talk e /clean registrati!');
+        console.log('✅ Comandi registrati!');
     } catch (error) {
         console.error('Errore registrazione comandi:', error);
     }
 });
 
-// TUTTI I TUOI!setup rimangono uguali...
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
     if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
@@ -86,8 +82,7 @@ client.on('messageCreate', async message => {
     if (message.content === '!setuprules') {
         const embed = new EmbedBuilder().setColor('#FF0000').setTitle('📜 LYX RL Server Rules').setDescription('**Seleziona una categoria dal menu per leggere le regole**\n\n`⚠️` Rispetta tutte le regole per evitare ban.').setImage(CONFIG.BANNER_URL).setFooter({ text: 'LYX RL • Rules', iconURL: CONFIG.LOGO_URL });
         const selectMenu = new StringSelectMenuBuilder().setCustomId('rules_menu').setPlaceholder('📜 Seleziona categoria regole').addOptions([{ label: 'Regole Generali', value: 'general', emoji: '📋' },{ label: 'Regole Chat', value: 'chat', emoji: '💬' },{ label: 'Regole Ticket', value: 'ticket', emoji: '🎫' },{ label: 'Termini di Servizio', value: 'tos', emoji: '📑' }]);
-        const row = new ActionRowBuilder().addComponents(selectMenu);
-        await message.channel.send({ embeds: [embed], components: [row] });
+        await message.channel.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
         await message.delete();
     }
 
@@ -110,32 +105,26 @@ client.on('messageCreate', async message => {
 
 client.on('interactionCreate', async interaction => {
     try {
-        // /talk - STEP 1
+        // /talk
         if (interaction.isChatInputCommand() && interaction.commandName === 'talk') {
-            if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-                return interaction.reply({ content: '❌ Non hai i permessi', ephemeral: true });
-            }
+            if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) return interaction.reply({ content: '❌ Non hai i permessi', ephemeral: true });
             const selectMenu = new StringSelectMenuBuilder().setCustomId('talk_from_lang').setPlaceholder('🌍 Scegli la lingua del tuo messaggio').addOptions([{ label: 'Italiano', value: 'it', emoji: '🇮🇹' },{ label: 'English', value: 'en', emoji: '🇬🇧' },{ label: 'Español', value: 'es', emoji: '🇪🇸' },{ label: 'Français', value: 'fr', emoji: '🇫🇷' },{ label: 'Deutsch', value: 'de', emoji: '🇩🇪' }]);
             await interaction.reply({ content: '**Step 1/3:** In che lingua scriverai il messaggio?', components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });
         }
 
-        // /clean - NUOVO COMANDO
+        // /clean
         if (interaction.isChatInputCommand() && interaction.commandName === 'clean') {
-            if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
-                return interaction.reply({ content: '❌ Non hai i permessi per eliminare messaggi', ephemeral: true });
-            }
+            if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return interaction.reply({ content: '❌ Non hai i permessi per eliminare messaggi', ephemeral: true });
             const amount = interaction.options.getInteger('quantità') || 100;
             await interaction.deferReply({ ephemeral: true });
-
             try {
                 const messages = await interaction.channel.bulkDelete(amount, true);
                 await interaction.editReply({ content: `✅ Eliminati ${messages.size} messaggi!` });
             } catch (error) {
-                await interaction.editReply({ content: '❌ Non posso eliminare messaggi più vecchi di 14 giorni o ho avuto un errore.' });
+                await interaction.editReply({ content: '❌ Non posso eliminare messaggi più vecchi di 14 giorni.' });
             }
         }
 
-        // /talk - STEP 2
         if (interaction.isStringSelectMenu() && interaction.customId === 'talk_from_lang') {
             const fromLang = interaction.values[0];
             translationCache.set(interaction.user.id, { from: fromLang });
@@ -143,7 +132,6 @@ client.on('interactionCreate', async interaction => {
             await interaction.update({ content: `**Step 2/3:** Lingua di partenza: \`${fromLang}\`\nIn che lingua vuoi tradurre?`, components: [new ActionRowBuilder().addComponents(selectMenu)] });
         }
 
-        // /talk - STEP 3
         if (interaction.isStringSelectMenu() && interaction.customId === 'talk_to_lang') {
             const toLang = interaction.values[0];
             const cache = translationCache.get(interaction.user.id);
@@ -155,7 +143,6 @@ client.on('interactionCreate', async interaction => {
             await interaction.showModal(modal);
         }
 
-        // /talk - STEP 4 TRADUCI
         if (interaction.isModalSubmit() && interaction.customId === 'talk_modal') {
             await interaction.deferReply({ ephemeral: true });
             const cache = translationCache.get(interaction.user.id);
@@ -171,7 +158,7 @@ client.on('interactionCreate', async interaction => {
             }
         }
 
-        // TUTTO IL RESTO UGUALE...
+        // TICKET + STATS + ALTRO...
         if (interaction.isButton() && interaction.customId === 'refresh_stats') {
             await interaction.deferUpdate();
             const uptime = Math.floor(client.uptime / 1000);
@@ -195,9 +182,7 @@ client.on('interactionCreate', async interaction => {
             const cleanUsername = interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
             const channelName = `ticket-${cleanUsername}`;
             const existing = interaction.guild.channels.cache.find(c => c.name === channelName);
-            if (existing) {
-                return interaction.followUp({ content: t.alreadyOpen.replace('{channel}', existing), ephemeral: true });
-            }
+            if (existing) return interaction.followUp({ content: t.alreadyOpen.replace('{channel}', existing), ephemeral: true });
             const ticketChannel = await interaction.guild.channels.create({ name: channelName, type: ChannelType.GuildText, parent: CONFIG.TICKET_CATEGORY, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },{ id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] },{ id: CONFIG.STAFF_ROLE, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }] });
             const embedTicket = new EmbedBuilder().setColor('#FF0000').setTitle(`🎫 LYX RL Support - ${lang.toUpperCase()}`).setDescription(t.welcome.replace('{user}', interaction.user)).setFooter({ text: `User ID: ${interaction.user.id}` }).setTimestamp();
             const reasonMenu = new StringSelectMenuBuilder().setCustomId(`ticket_reason_${lang}`).setPlaceholder(t.selectReason).addOptions([{ label: t.reasons.support, value: 'support', emoji: '🆘' },{ label: t.reasons.replace, value: 'replace', emoji: '🔄' },{ label: t.reasons.notdelivered, value: 'notdelivered', emoji: '📦' },{ label: t.reasons.other, value: 'other', emoji: '❓' }]);
