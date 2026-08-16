@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionsBitField, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const express = require('express');
-const translate = require('translate');
+const axios = require('axios');
 
 const client = new Client({
     intents: [
@@ -32,6 +32,16 @@ const LANG = {
 
 const translationCache = new Map();
 
+async function translateText(text, from, to) {
+    try {
+        const res = await axios.get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`);
+        return res.data.responseData.translatedText;
+    } catch (err) {
+        console.error('Errore API traduzione:', err);
+        return null;
+    }
+}
+
 client.once('ready', async () => {
     console.log(`✅ ${client.user.tag} è online!`);
     client.user.setActivity('LYX RL Premium', { type: 3 });
@@ -40,10 +50,10 @@ client.once('ready', async () => {
     const commands = [
         new SlashCommandBuilder().setName('talk').setDescription('Traduci e invia un messaggio').toJSON(),
         new SlashCommandBuilder()
-        .setName('clean')
-        .setDescription('Elimina messaggi dal canale')
-        .addIntegerOption(option => option.setName('quantità').setDescription('Quanti messaggi eliminare 1-100').setMinValue(1).setMaxValue(100).setRequired(false))
-        .toJSON()
+       .setName('clean')
+       .setDescription('Elimina messaggi dal canale')
+       .addIntegerOption(option => option.setName('quantità').setDescription('Quanti messaggi eliminare 1-100').setMinValue(1).setMaxValue(100).setRequired(false))
+       .toJSON()
     ];
 
     try {
@@ -105,14 +115,12 @@ client.on('messageCreate', async message => {
 
 client.on('interactionCreate', async interaction => {
     try {
-        // /talk
         if (interaction.isChatInputCommand() && interaction.commandName === 'talk') {
             if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) return interaction.reply({ content: '❌ Non hai i permessi', ephemeral: true });
             const selectMenu = new StringSelectMenuBuilder().setCustomId('talk_from_lang').setPlaceholder('🌍 Scegli la lingua del tuo messaggio').addOptions([{ label: 'Italiano', value: 'it', emoji: '🇮🇹' },{ label: 'English', value: 'en', emoji: '🇬🇧' },{ label: 'Español', value: 'es', emoji: '🇪🇸' },{ label: 'Français', value: 'fr', emoji: '🇫🇷' },{ label: 'Deutsch', value: 'de', emoji: '🇩🇪' }]);
             await interaction.reply({ content: '**Step 1/3:** In che lingua scriverai il messaggio?', components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });
         }
 
-        // /clean
         if (interaction.isChatInputCommand() && interaction.commandName === 'clean') {
             if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) return interaction.reply({ content: '❌ Non hai i permessi per eliminare messaggi', ephemeral: true });
             const amount = interaction.options.getInteger('quantità') || 100;
@@ -147,18 +155,13 @@ client.on('interactionCreate', async interaction => {
             await interaction.deferReply({ ephemeral: true });
             const cache = translationCache.get(interaction.user.id);
             const message = interaction.fields.getTextInputValue('message_input');
-            try {
-                const res = await translate(message, { from: cache.from, to: cache.to });
-                await interaction.channel.send(`**${interaction.user.displayName}:** ${res}`);
-                await interaction.editReply({ content: `✅ Inviato! \`${cache.from} → ${cache.to}\`` });
-                translationCache.delete(interaction.user.id);
-            } catch (error) {
-                console.error('Errore traduzione:', error);
-                await interaction.editReply({ content: '❌ Errore traduzione. Riprova con un messaggio diverso.' });
-            }
+            const translated = await translateText(message, cache.from, cache.to);
+            if (!translated) return interaction.editReply({ content: '❌ Errore traduzione. API momentaneamente offline. Riprova.' });
+            await interaction.channel.send(`**${interaction.user.displayName}:** ${translated}`);
+            await interaction.editReply({ content: `✅ Inviato! \`${cache.from} → ${cache.to}\`` });
+            translationCache.delete(interaction.user.id);
         }
 
-        // TICKET + STATS + ALTRO...
         if (interaction.isButton() && interaction.customId === 'refresh_stats') {
             await interaction.deferUpdate();
             const uptime = Math.floor(client.uptime / 1000);
