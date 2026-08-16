@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuild
 const mongoose = require('mongoose');
 const axios = require('axios');
 const fs = require('fs');
-const translate = require('@vitalets/google-translate-api'); // AGGIUNTO
+const translate = require('@vitalets/google-translate-api');
 require('dotenv').config();
 
 const app = express();
@@ -61,7 +61,7 @@ client.once('ready', async () => {
   const commands = [
     new SlashCommandBuilder().setName('setup-ticket').setDescription('Send the ticket panel'),
     new SlashCommandBuilder().setName('stock').setDescription('Check remaining keys'),
-    new SlashCommandBuilder().setName('talk').setDescription('Traduci messaggi per parlare con clienti stranieri') // AGGIUNTO
+    new SlashCommandBuilder().setName('talk').setDescription('Traduci messaggi per parlare con clienti stranieri')
   ].map(cmd => cmd.toJSON());
   await new REST({ version: '10' }).setToken(TOKEN).put(Routes.applicationCommands(client.user.id), { body: commands });
 });
@@ -161,13 +161,12 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply({ content: `Keys disponibili: **${available}** 🩸`, ephemeral: true });
     }
 
-    // ===== LYX TRANSLATE SYSTEM - AGGIUNTO =====
     if (interaction.isChatInputCommand() && interaction.commandName === 'talk') {
       const row1 = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
-        .setCustomId('translate_from')
-        .setPlaceholder('🌍 Lingua in cui SCRIVI')
-        .addOptions([
+       .setCustomId('translate_from')
+       .setPlaceholder('🌍 Lingua in cui SCRIVI')
+       .addOptions([
             { label: 'Italiano', value: 'it', emoji: '🇮🇹' },
             { label: 'English', value: 'en', emoji: '🇬🇧' },
             { label: 'Español', value: 'es', emoji: '🇪🇸' },
@@ -177,9 +176,9 @@ client.on('interactionCreate', async interaction => {
       );
       const row2 = new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
-        .setCustomId('translate_to')
-        .setPlaceholder('🎯 Lingua in cui TRADURRE')
-        .addOptions([
+       .setCustomId('translate_to')
+       .setPlaceholder('🎯 Lingua in cui TRADURRE')
+       .addOptions([
             { label: 'Italiano', value: 'it', emoji: '🇮🇹' },
             { label: 'English', value: 'en', emoji: '🇬🇧' },
             { label: 'Español', value: 'es', emoji: '🇪🇸' },
@@ -203,14 +202,14 @@ client.on('interactionCreate', async interaction => {
 
       if (global.lyxTranslate[interaction.user.id].from && global.lyxTranslate[interaction.user.id].to) {
         const modal = new ModalBuilder()
-        .setCustomId('translate_modal')
-        .setTitle('LYX Translate');
+       .setCustomId('translate_modal')
+       .setTitle('LYX Translate');
         const textInput = new TextInputBuilder()
-        .setCustomId('text_to_translate')
-        .setLabel('Scrivi il testo da tradurre')
-        .setStyle(TextInputStyle.Paragraph)
-        .setRequired(true)
-        .setMaxLength(1000);
+       .setCustomId('text_to_translate')
+       .setLabel('Scrivi il testo da tradurre')
+       .setStyle(TextInputStyle.Paragraph)
+       .setRequired(true)
+       .setMaxLength(1000);
         modal.addComponents(new ActionRowBuilder().addComponents(textInput));
         return await interaction.showModal(modal);
       }
@@ -231,14 +230,14 @@ client.on('interactionCreate', async interaction => {
         const flags = { it: '🇮🇹', en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷', de: '🇩🇪' };
 
         const embed = new EmbedBuilder()
-        .setColor('#FF0000')
-        .setTitle('🔴 LYX TRANSLATE')
-        .addFields(
+       .setColor('#FF0000')
+       .setTitle('🔴 LYX TRANSLATE')
+       .addFields(
             { name: `${flags[langData.from]} Originale`, value: `\`\`\`${testo}\`\`\`` },
             { name: `${flags[langData.to]} Tradotto`, value: `\`\`\`${res.text}\`\`\`` }
           )
-        .setFooter({ text: 'LYX Premium • Copia e incolla al cliente' })
-        .setTimestamp();
+       .setFooter({ text: 'LYX Premium • Copia e incolla al cliente' })
+       .setTimestamp();
 
         delete global.lyxTranslate[interaction.user.id];
         return await interaction.editReply({ embeds: [embed] });
@@ -246,7 +245,6 @@ client.on('interactionCreate', async interaction => {
         return await interaction.editReply({ content: `❌ Errore traduzione: ${err.message} 💔` });
       }
     }
-    // ===== FINE LYX TRANSLATE =====
 
     if (interaction.isButton() && interaction.customId.startsWith('ticket_')) {
       const category = interaction.customId.split('_')[1];
@@ -364,7 +362,6 @@ app.post('/api/crea-key', async (req, res) => {
 
     const { id, email, product, product_id, quantity } = req.body;
 
-    // CHIAMA RESELLME
     const resellmeResponse = await axios.post(RESELLME_WEBHOOK, req.body, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 15000
@@ -426,4 +423,4 @@ app.post('/api/crea-key', async (req, res) => {
 
 app.get('/', (req, res) => res.send('LYX RL Services Online 🔴'));
 app.listen(PORT, () => console.log(`Server on port ${PORT}`));
-client.login(DISCORD_TOKEN);
+client.login(DISCORD_TOKEN); // CORRETTO - USA LA VARIABILE TOKEN DEFINITA SOPRA
