@@ -1,610 +1,429 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, AttachmentBuilder, PermissionsBitField, ChannelType, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
-const { createCanvas, loadImage } = require('canvas');
+const express = require('express');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder } = require('discord.js');
+const mongoose = require('mongoose');
+const axios = require('axios');
+const fs = require('fs');
+const translate = require('@vitalets/google-translate-api'); // AGGIUNTO
+require('dotenv').config();
 
-// --- CONFIG LYX RL LUXURY RED ---
-const VERIFIED_ROLE_ID = '1530144188333817897';
-const STAFF_ROLE_ID = '1530144125599612978';
-const WELCOME_CHANNEL_NAME = 'welcome';
-const VOUCHES_CHANNEL_NAME = ':mag:・vouches';
-const LOGS_CHANNEL_NAME = 'logslyx';
-const RULES_CHANNEL_NAME = ':loudspeaker:・rules';
-const LTC_ADDRESS = 'ltc1q4cunrt3ahlcktl7gdn9svq9uwenvzkacmgyq35';
-const WEBSITE_URL = 'https://lyxrlservices.mysellauth.com/';
-const BANNER_URL = 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a806f5d&is=6a7f1ddd&hm=3cf40269e7b1f7e9fce71a0d6a3cc1810a5700360714dd017e07c31e7c600d97&=&format=webp&quality=lossless&width=768&height=428'; // Banner rosso LYX
-const LOGO_URL = 'https://media.discordapp.net/attachments/1529233083801407690/1537640293019557909/B817CFC1-8E2C-4FEF-9B69-632FA585D7AC.png?ex=6a806f5d&is=6a7f1ddd&hm=3cf40269e7b1f7e9fce71a0d6a3cc1810a5700360714dd017e07c31e7c600d97&=&format=webp&quality=lossless&width=768&height=428';
-const LYX_RED = '#FF0000';
-const LYX_DARK = '#0a0a0a';
-const GOLD = '#FFD700';
-// --------------
+const app = express();
+app.use(express.json());
 
-// TRADUZIONI COMPLETE - 5 LINGUE
-const LANGS = {
-    it: {
-        name: 'Italiano', flag: '🇮🇹',
-        select_category: '🎫 Seleziona il tipo di problema',
-        categories: {
-            support: { label: 'Supporto Generale', desc: 'Domande generali sui prodotti', emoji: '💬' },
-            order: { label: 'Problema Ordine', desc: 'Ordine non ricevuto o problemi', emoji: '📦' },
-            not_delivered: { label: 'Non Ricevuto', desc: 'Acquisto non consegnato', emoji: '❌' },
-            refund: { label: 'Rimborso', desc: 'Richiesta di rimborso', emoji: '💰' }
-        },
-        ticket_title: '🎫 TICKET LYX RL PREMIUM',
-        welcome: 'Benvenuto', category: 'Categoria', language: 'Lingua',
-        describe: 'Descrivi il tuo problema in dettaglio', attach: 'Allega screenshot se necessario',
-        response_time: 'Risposta media: <5 minuti', staff_reply: 'Lo staff ti risponderà a breve',
-        close_ticket: 'CHIUDI TICKET', send_ltc: 'INVIA WALLET LTC'
-    },
-    en: {
-        name: 'English', flag: '🇬🇧',
-        select_category: '🎫 Select issue type',
-        categories: {
-            support: { label: 'General Support', desc: 'General product questions', emoji: '💬' },
-            order: { label: 'Order Issue', desc: 'Order not received or problems', emoji: '📦' },
-            not_delivered: { label: 'Not Delivered', desc: 'Purchase not delivered', emoji: '❌' },
-            refund: { label: 'Refund', desc: 'Refund request', emoji: '💰' }
-        },
-        ticket_title: '🎫 LYX RL PREMIUM TICKET',
-        welcome: 'Welcome', category: 'Category', language: 'Language',
-        describe: 'Describe your issue in detail', attach: 'Attach screenshots if needed',
-        response_time: 'Average response: <5 minutes', staff_reply: 'Staff will reply shortly',
-        close_ticket: 'CLOSE TICKET', send_ltc: 'SEND LTC WALLET'
-    },
-    fr: {
-        name: 'Français', flag: '🇫🇷',
-        select_category: '🎫 Sélectionnez le type de problème',
-        categories: {
-            support: { label: 'Support Général', desc: 'Questions générales sur les produits', emoji: '💬' },
-            order: { label: 'Problème de Commande', desc: 'Commande non reçue ou problèmes', emoji: '📦' },
-            not_delivered: { label: 'Non Livré', desc: 'Achat non livré', emoji: '❌' },
-            refund: { label: 'Remboursement', desc: 'Demande de remboursement', emoji: '💰' }
-        },
-        ticket_title: '🎫 TICKET LYX RL PREMIUM',
-        welcome: 'Bienvenue', category: 'Catégorie', language: 'Langue',
-        describe: 'Décrivez votre problème en détail', attach: 'Joignez des captures si nécessaire',
-        response_time: 'Réponse moyenne: <5 minutes', staff_reply: 'Le staff vous répondra bientôt',
-        close_ticket: 'FERMER TICKET', send_ltc: 'ENVOYER WALLET LTC'
-    },
-    pt: {
-        name: 'Português', flag: '🇵🇹',
-        select_category: '🎫 Selecione o tipo de problema',
-        categories: {
-            support: { label: 'Suporte Geral', desc: 'Perguntas gerais sobre produtos', emoji: '💬' },
-            order: { label: 'Problema de Pedido', desc: 'Pedido não recebido ou problemas', emoji: '📦' },
-            not_delivered: { label: 'Não Entregue', desc: 'Compra não entregue', emoji: '❌' },
-            refund: { label: 'Reembolso', desc: 'Pedido de reembolso', emoji: '💰' }
-        },
-        ticket_title: '🎫 TICKET LYX RL PREMIUM',
-        welcome: 'Bem-vindo', category: 'Categoria', language: 'Idioma',
-        describe: 'Descreva seu problema em detalhes', attach: 'Anexe capturas se necessário',
-        response_time: 'Resposta média: <5 minutos', staff_reply: 'A equipe responderá em breve',
-        close_ticket: 'FECHAR TICKET', send_ltc: 'ENVIAR WALLET LTC'
-    },
-    de: {
-        name: 'Deutsch', flag: '🇩🇪',
-        select_category: '🎫 Wählen Sie den Problemtyp',
-        categories: {
-            support: { label: 'Allgemeiner Support', desc: 'Allgemeine Produktfragen', emoji: '💬' },
-            order: { label: 'Bestellproblem', desc: 'Bestellung nicht erhalten oder Probleme', emoji: '📦' },
-            not_delivered: { label: 'Nicht Geliefert', desc: 'Kauf nicht geliefert', emoji: '❌' },
-            refund: { label: 'Rückerstattung', desc: 'Rückerstattungsanfrage', emoji: '💰' }
-        },
-        ticket_title: '🎫 LYX RL PREMIUM TICKET',
-        welcome: 'Willkommen', category: 'Kategorie', language: 'Sprache',
-        describe: 'Beschreiben Sie Ihr Problem im Detail', attach: 'Fügen Sie Screenshots bei, falls nötig',
-        response_time: 'Durchschnittliche Antwort: <5 Minuten', staff_reply: 'Das Team wird in Kürze antworten',
-        close_ticket: 'TICKET SCHLIESSEN', send_ltc: 'LTC WALLET SENDEN'
-    }
+const TOKEN = process.env.TOKEN;
+const MONGO_URL = process.env.MONGO_URL;
+const MAKE_WEBHOOK = process.env.MAKE_WEBHOOK;
+const RESELLME_WEBHOOK = 'https://resellme.xyz/api/reseller/webhook/mzsDGCAz2Gg-weuPFh3Cbs1RmlLnjtpX';
+const PORT = process.env.PORT || 3000;
+const GUILD_ID = process.env.GUILD_ID;
+const TICKET_CATEGORY_ID = process.env.TICKET_CATEGORY_ID;
+const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
+const SELL_LOG_CHANNEL_ID = process.env.SELL_LOG_CHANNEL_ID;
+const SERVER_NAME = process.env.SERVER_NAME || 'LYX RL Services';
+
+const TICKET_BANNER_URL = 'https://i.imgur.com/jzZKsqR.png';
+
+const EMOJI_QUESTIONS = '<:10:1538317499203063808>';
+const EMOJI_GENERAL = '<:11:1538317571344834590>';
+const EMOJI_NOT_RECEIVED = '<:12:1538317664953303200>';
+const EMOJI_MANUAL = '<:13:1538317705759825930>';
+const EMOJI_REPLACEMENT = '<:14:1538317750253002964>';
+
+const PRODUCT_IMAGES = {
+  'Netflix [ Lifetime]': 'https://i.imgur.com/TcVHY8I.png',
+  'CrunchyRoll [Lifetime]': 'https://media.discordapp.net/attachments/1529233083801407690/1538342014666547220/1045021.png?ex=6a825425&is=6a8102a5&hm=7b963c95f8e0df90ed489627438e5034013b5af5b307e9cb02f91cf8ba7b2283&=&format=webp&quality=lossless&width=475&height=640',
+  'Spotify Premium Lifetime Full Access': 'https://i.imgur.com/FDoAcMa.png',
+  'Youtube Premium Lifetime Full Access': 'https://i.imgur.com/wWgOUMz.png',
+  'Prime Video 1': 'https://i.imgur.com/dTEs4Vk.png',
+  'Prime Video 6': 'https://i.imgur.com/tQjX7Au.png',
+  'Dazn ( LIFETIME )': 'https://i.imgur.com/cPG3dek.png',
+  'Disney+ [LIFETIME]': 'https://i.imgur.com/6yavlZF.png',
+  'Capcut [Lifetime]': 'https://i.imgur.com/2PIr4WC.png',
+  'Gemini Pro+ [LINK - 18 Months]': 'https://i.imgur.com/s7kZUFc.png',
+  'Nord VPN [LIFETIME]': 'https://i.imgur.com/nmK5hv0.png',
+  'default': 'https://i.imgur.com/9Tmd5nW.png'
 };
 
+let KEYS = require('./keys.json');
+const saveKeys = () => fs.writeFileSync('./keys.json', JSON.stringify(KEYS, null, 2));
+
+mongoose.connect(MONGO_URL);
+const OrderLog = mongoose.model('OrderLog', new mongoose.Schema({
+  key: String, orderid: String, email: String, product: String, quantity: { type: Number, default: 1 },
+  payment: String, discordId: String, discordUsername: String, createdAt: { type: Date, default: Date.now }
+}));
+
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildPresences
-    ]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent]
 });
 
-client.once('ready', () => {
-    console.log(`✅ LYX RL LUXURY RED Bot online come ${client.user.tag}`);
-    client.user.setActivity('LYX RL Premium', { type: 3 });
+client.once('ready', async () => {
+  console.log(`Bot online come ${client.user.tag} 🔴`);
+  const commands = [
+    new SlashCommandBuilder().setName('setup-ticket').setDescription('Send the ticket panel'),
+    new SlashCommandBuilder().setName('stock').setDescription('Check remaining keys'),
+    new SlashCommandBuilder().setName('talk').setDescription('Traduci messaggi per parlare con clienti stranieri') // AGGIUNTO
+  ].map(cmd => cmd.toJSON());
+  await new REST({ version: '10' }).setToken(TOKEN).put(Routes.applicationCommands(client.user.id), { body: commands });
 });
 
-// --- WELCOME LUXURY RED CON FONT FIGO ---
-client.on('guildMemberAdd', async member => {
-    const channel = member.guild.channels.cache.find(ch => ch.name === WELCOME_CHANNEL_NAME);
-    if (!channel) return;
+async function sendKrazyTicketEmbed(channel, user, keyData, status = 'Awaiting Key') {
+    const ticketCount = await OrderLog.countDocuments({});
+    const productName = keyData.product || 'Unknown Product';
+    const productImg = PRODUCT_IMAGES[productName] || PRODUCT_IMAGES['default'];
+
+    if (!PRODUCT_IMAGES[productName]) {
+        console.log(`[ERRORE] Prodotto non trovato in PRODUCT_IMAGES: "${productName}"`);
+    }
+
+    const embed = new EmbedBuilder()
+.setColor(status === 'Completed'? '#00FF00' : '#5865F2')
+.setAuthor({ name: SERVER_NAME, iconURL: client.user.displayAvatarURL() })
+.setTitle(`Ticket #${ticketCount}`)
+.setDescription('Thanks for reaching out, our staff will reply shortly.')
+.addFields(
+  { name: 'User', value: `${user}`, inline: true },
+  { name: 'Category', value: 'Manual Delivery', inline: true },
+  { name: 'Quantity', value: `${keyData.quantity || 1}`, inline: true },
+  { name: 'Reason', value: status === 'Completed'? `Redeemed Key: ${keyData.key}` : `Awaiting LYX-KEY`, inline: false },
+  { name: 'Opened', value: `<t:${Math.floor(Date.now()/1000)}:R>`, inline: true },
+  { name: 'Ticket ID', value: `${ticketCount}`, inline: true },
+  { name: 'Status', value: status === 'Completed'? '🟢 Completed' : '🟡 Awaiting Key', inline: true }
+)
+.setImage(productImg)
+.addFields({
+  name: 'Verified Order',
+  value: `Invoice: ${keyData.orderid || 'N/A'}\nProduct: ${productName}\nEmail: ${keyData.email || 'N/A'}\nPayment: ${keyData.payment || 'LYX-KEY'}\nStatus: ${status === 'Completed'? 'COMPLETED' : 'PENDING'}`
+})
+.setFooter({ text: `${SERVER_NAME} • Ticket System` })
+.setTimestamp();
+
+    return await channel.send({ embeds: [embed] });
+}
+
+async function redeemKeyAuto(codice, user, ticketChannel, ticketEmbedMsg) {
+    const keyData = KEYS[codice];
+    if (!keyData || keyData.used) return { success: false, error: 'Invalid or already used key' };
+
+    KEYS[codice].used = true;
+    KEYS[codice].discordId = user.id;
+    KEYS[codice].discordUsername = user.username;
+    KEYS[codice].key = codice;
+    saveKeys();
+
+    await new OrderLog({
+      key: codice, orderid: keyData.orderid, email: keyData.email, product: keyData.product,
+      quantity: keyData.quantity || 1, payment: keyData.payment || 'SellAuth',
+      discordId: user.id, discordUsername: user.username
+    }).save();
+
+    const newEmbedMsg = await sendKrazyTicketEmbed(ticketChannel, user, KEYS[codice], 'Completed');
+    await ticketEmbedMsg.edit({ embeds: newEmbedMsg.embeds });
 
     try {
-        const canvas = createCanvas(1920, 1080);
-        const ctx = canvas.getContext('2d');
+        await user.send(`**${keyData.product}** - Le tue credenziali:\n\`\`\`${keyData.credentials_raw}\`\`\``);
+        return { success: true };
+    } catch (err) {
+        await ticketChannel.send({ content: `⚠️ <@&${STAFF_ROLE_ID}> **DM chiusi** - Consegna manuale:\n**Product:** ${keyData.product}\n**Credenziali:** \`\`\`${keyData.credentials_raw}\`\`\`\n**Key:** ${codice}` });
+        return { success: true, dmFailed: true };
+    }
+}
 
-        ctx.fillStyle = LYX_DARK;
-        ctx.fillRect(0, 0, 1920, 1080);
+function getTicketPanel() {
+  const embed1 = new EmbedBuilder().setColor('#2B2D31').setImage(TICKET_BANNER_URL);
+  const embed2 = new EmbedBuilder().setColor('#2B2D31').setDescription('**Have a quick question about our products?**\nPress `Questions` to open the matching ticket flow.');
+  const embed3 = new EmbedBuilder().setColor('#2B2D31').setDescription('**Need help with anything on our store?**\nPress `General Support` to open the matching ticket flow.');
+  const embed4 = new EmbedBuilder().setColor('#2B2D31').setDescription('**Did not receive your product after purchase?**\nPress `Product Not Received` to open the matching ticket flow.');
+  const embed5 = new EmbedBuilder().setColor('#2B2D31').setDescription('**This ticket is for products delivered manually by us.**\nPress `Manual Delivery` to open the matching ticket flow.');
+  const embed6 = new EmbedBuilder().setColor('#2B2D31').setDescription('**Something is not working? Request a replacement.**\nPress `Replacement` to open the matching ticket flow.');
 
-        // Pattern luxury
-        ctx.strokeStyle = '#1a1a1a';
-        ctx.lineWidth = 3;
-        for (let i = 0; i < 1920; i += 50) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i + 1080, 1080);
-            ctx.stroke();
-        }
+  const row1 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket_questions').setLabel('Questions').setStyle(ButtonStyle.Secondary).setEmoji(EMOJI_QUESTIONS));
+  const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket_general').setLabel('General Support').setStyle(ButtonStyle.Secondary).setEmoji(EMOJI_GENERAL));
+  const row3 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket_notreceived').setLabel('Product Not Received').setStyle(ButtonStyle.Secondary).setEmoji(EMOJI_NOT_RECEIVED));
+  const row4 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket_manual').setLabel('Manual Delivery').setStyle(ButtonStyle.Secondary).setEmoji(EMOJI_MANUAL));
+  const row5 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('ticket_replacement').setLabel('Replacement').setStyle(ButtonStyle.Secondary).setEmoji(EMOJI_REPLACEMENT));
 
-        try {
-            const banner = await loadImage(BANNER_URL);
-            ctx.globalAlpha = 0.6;
-            ctx.drawImage(banner, 0, 0, 1920, 1080);
-            ctx.globalAlpha = 1;
-        } catch {}
+  return { embeds: [embed1, embed2, embed3, embed4, embed5, embed6], components: [row1, row2, row3, row4, row5] };
+}
 
-        ctx.strokeStyle = LYX_RED;
-        ctx.lineWidth = 25;
-        ctx.strokeRect(60, 60, 1800, 960);
-        ctx.strokeStyle = GOLD;
-        ctx.lineWidth = 8;
-        ctx.strokeRect(95, 95, 1730, 890);
+client.on('interactionCreate', async interaction => {
+  try {
+    if (interaction.isChatInputCommand() && interaction.commandName === 'setup-ticket') {
+      if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator))
+        return interaction.reply({ content: 'Admin only bro 💔', ephemeral: true });
+      await interaction.deferReply({ ephemeral: true });
+      const panel = getTicketPanel();
+      await interaction.channel.send({ embeds: panel.embeds, components: panel.components });
+      await interaction.editReply({ content: 'Ticket panel sent 🩸' });
+    }
 
-        try {
-            const logo = await loadImage(LOGO_URL);
-            ctx.drawImage(logo, 710, 100, 500, 500);
-        } catch {}
+    if (interaction.isChatInputCommand() && interaction.commandName === 'stock') {
+      const available = Object.values(KEYS).filter(k =>!k.used).length;
+      await interaction.reply({ content: `Keys disponibili: **${available}** 🩸`, ephemeral: true });
+    }
 
-        const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 512 }));
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(960, 700, 220, 0, Math.PI * 2, true);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(avatar, 740, 480, 440, 440);
-        ctx.restore();
+    // ===== LYX TRANSLATE SYSTEM - AGGIUNTO =====
+    if (interaction.isChatInputCommand() && interaction.commandName === 'talk') {
+      const row1 = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+        .setCustomId('translate_from')
+        .setPlaceholder('🌍 Lingua in cui SCRIVI')
+        .addOptions([
+            { label: 'Italiano', value: 'it', emoji: '🇮🇹' },
+            { label: 'English', value: 'en', emoji: '🇬🇧' },
+            { label: 'Español', value: 'es', emoji: '🇪🇸' },
+            { label: 'Français', value: 'fr', emoji: '🇫🇷' },
+            { label: 'Deutsch', value: 'de', emoji: '🇩🇪' },
+          ])
+      );
+      const row2 = new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+        .setCustomId('translate_to')
+        .setPlaceholder('🎯 Lingua in cui TRADURRE')
+        .addOptions([
+            { label: 'Italiano', value: 'it', emoji: '🇮🇹' },
+            { label: 'English', value: 'en', emoji: '🇬🇧' },
+            { label: 'Español', value: 'es', emoji: '🇪🇸' },
+            { label: 'Français', value: 'fr', emoji: '🇫🇷' },
+            { label: 'Deutsch', value: 'de', emoji: '🇩🇪' },
+          ])
+      );
+      return await interaction.reply({
+        content: '🔴 **LYX TRANSLATE** - Scegli le lingue 🩸',
+        components: [row1, row2],
+        ephemeral: true
+      });
+    }
 
-        ctx.strokeStyle = LYX_RED;
-        ctx.lineWidth = 15;
-        ctx.beginPath();
-        ctx.arc(960, 700, 228, 0, Math.PI * 2, true);
-        ctx.stroke();
+    if (interaction.isStringSelectMenu() && (interaction.customId === 'translate_from' || interaction.customId === 'translate_to')) {
+      if (!global.lyxTranslate) global.lyxTranslate = {};
+      if (!global.lyxTranslate[interaction.user.id]) global.lyxTranslate[interaction.user.id] = {};
 
-        // FONT LUXURY - BEBAS NEUE / ANTON STYLE
-        ctx.font = 'bold 130px "Bebas Neue", Impact, "Arial Black", sans-serif';
-        ctx.fillStyle = LYX_RED;
-        ctx.textAlign = 'center';
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 50;
-        ctx.fillText('WELCOME TO LYX RL', 960, 1000);
+      if (interaction.customId === 'translate_from') global.lyxTranslate[interaction.user.id].from = interaction.values[0];
+      if (interaction.customId === 'translate_to') global.lyxTranslate[interaction.user.id].to = interaction.values[0];
 
-        ctx.font = 'bold 90px "Bebas Neue", Impact, "Arial Black", sans-serif';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.shadowBlur = 30;
-        ctx.fillText(member.user.username.toUpperCase(), 960, 1080);
+      if (global.lyxTranslate[interaction.user.id].from && global.lyxTranslate[interaction.user.id].to) {
+        const modal = new ModalBuilder()
+        .setCustomId('translate_modal')
+        .setTitle('LYX Translate');
+        const textInput = new TextInputBuilder()
+        .setCustomId('text_to_translate')
+        .setLabel('Scrivi il testo da tradurre')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true)
+        .setMaxLength(1000);
+        modal.addComponents(new ActionRowBuilder().addComponents(textInput));
+        return await interaction.showModal(modal);
+      }
+      return await interaction.deferUpdate();
+    }
 
-        const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'welcome-luxury.png' });
+    if (interaction.isModalSubmit() && interaction.customId === 'translate_modal') {
+      await interaction.deferReply({ ephemeral: true });
+      const testo = interaction.fields.getTextInputValue('text_to_translate');
+      const langData = global.lyxTranslate[interaction.user.id];
+
+      if (!langData?.from ||!langData?.to) {
+        return await interaction.editReply({ content: '❌ Seleziona prima entrambe le lingue bro 💔' });
+      }
+
+      try {
+        const res = await translate(testo, { from: langData.from, to: langData.to });
+        const flags = { it: '🇮🇹', en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷', de: '🇩🇪' };
 
         const embed = new EmbedBuilder()
-.setTitle('🔥 BENVENUTO SU LYX RL')
-.setDescription(`**${member}** è entrato nel server\n\n⚡ **Verificati** per accesso completo\n💎 **Premium Services** 24/7`)
-.setImage('attachment://welcome-luxury.png')
-.setColor(LYX_RED)
-.setFooter({ text: 'LYX RL • Premium Services', iconURL: LOGO_URL })
-.setTimestamp();
+        .setColor('#FF0000')
+        .setTitle('🔴 LYX TRANSLATE')
+        .addFields(
+            { name: `${flags[langData.from]} Originale`, value: `\`\`\`${testo}\`\`\`` },
+            { name: `${flags[langData.to]} Tradotto`, value: `\`\`\`${res.text}\`\`\`` }
+          )
+        .setFooter({ text: 'LYX Premium • Copia e incolla al cliente' })
+        .setTimestamp();
 
-        await channel.send({ content: `${member}`, embeds: [embed], files: [attachment] });
-
-    } catch (error) {
-        console.error('Errore welcome:', error);
+        delete global.lyxTranslate[interaction.user.id];
+        return await interaction.editReply({ embeds: [embed] });
+      } catch (err) {
+        return await interaction.editReply({ content: `❌ Errore traduzione: ${err.message} 💔` });
+      }
     }
-});
+    // ===== FINE LYX TRANSLATE =====
 
-// --- COMANDI ---
-client.on('messageCreate', async message => {
-    if (message.author.bot ||!message.content.startsWith('!')) return;
-    const args = message.content.slice(1).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
+    if (interaction.isButton() && interaction.customId.startsWith('ticket_')) {
+      const category = interaction.customId.split('_')[1];
+      const modal = new ModalBuilder().setCustomId(`ticket_modal_${category}`);
 
-    try {
-        if (command === 'ping') {
-            const embed = new EmbedBuilder()
-.setTitle('🏓 LYX RL STATUS')
-.setDescription(`**Online** • Latency: \`${client.ws.ping}ms\`\n**Uptime**: 24/7 Premium`)
-.setColor(LYX_RED)
-.setThumbnail(LOGO_URL);
-            return message.reply({ embeds: [embed] });
+      if (category === 'manual') {
+        modal.setTitle('Manual Delivery Ticket');
+        const keyInput = new TextInputBuilder().setCustomId('key_input').setLabel('LYX-KEY (Solo Numeri)').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder('123456');
+        modal.addComponents(new ActionRowBuilder().addComponents(keyInput));
+      } else {
+        const categoryNames = { questions: 'Questions', general: 'General Support', notreceived: 'Product Not Received', replacement: 'Replacement' };
+        modal.setTitle(`${categoryNames[category]} Ticket`);
+        const serviceInput = new TextInputBuilder().setCustomId('service_input').setLabel('Service/Product (Optional)').setStyle(TextInputStyle.Short).setRequired(false);
+        const issueInput = new TextInputBuilder().setCustomId('issue_input').setLabel('Describe your issue').setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(4000);
+        modal.addComponents(new ActionRowBuilder().addComponents(serviceInput), new ActionRowBuilder().addComponents(issueInput));
+      }
+      return await interaction.showModal(modal);
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('ticket_modal_')) {
+      await interaction.deferReply({ ephemeral: true });
+      const category = interaction.customId.split('_')[2];
+
+      const ticketChannel = await interaction.guild.channels.create({
+        name: `ticket-${interaction.user.username}`,
+        type: ChannelType.GuildText,
+        parent: TICKET_CATEGORY_ID,
+        topic: `Category: ${category}`,
+        permissionOverwrites: [
+          { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+          { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+          { id: STAFF_ROLE_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
+        ]
+      });
+
+      if (category === 'manual') {
+        const keyCode = interaction.fields.getTextInputValue('key_input');
+
+        if (KEYS[keyCode] &&!KEYS[keyCode].used) {
+          const ticketEmbedMsg = await sendKrazyTicketEmbed(ticketChannel, interaction.user, KEYS[keyCode], 'Awaiting Key');
+          const autoMsg = await ticketChannel.send({ content: `Ciao ${interaction.user}! 💎\nInviami la tua **LYX-KEY** e ti manderò subito il tuo prodotto!` });
+          await autoMsg.react('💎');
+          await redeemKeyAuto(keyCode, interaction.user, ticketChannel, ticketEmbedMsg);
+          await interaction.editReply({ content: `Ticket creato: ${ticketChannel}\n✅ Key riscattata! 🩸` });
+        } else {
+          await ticketChannel.send({ content: `❌ Key non valida o già usata. Incolla una key valida.` });
+          await interaction.editReply({ content: `Ticket creato: ${ticketChannel}\n❌ Key non valida 🩸` });
         }
+      } else {
+        const service = interaction.fields.getTextInputValue('service_input') || 'Not specified';
+        const issue = interaction.fields.getTextInputValue('issue_input');
+        const categoryNames = { questions: 'Questions', general: 'General Support', notreceived: 'Product Not Received', replacement: 'Replacement' };
 
-        if (command === 'testwelcome' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            client.emit('guildMemberAdd', message.member);
-            return message.reply('✅ Test welcome luxury inviato');
-        }
-
-        if (command === 'ltc') {
-            const embed = new EmbedBuilder()
-.setTitle('💎 LYX RL • LTC ADDRESS')
-.setDescription(`**Indirizzo Ufficiale**\n\`\`\`${LTC_ADDRESS}\`\`\`\n⚠️ **Invia solo LTC**`)
-.setColor('#345D9D')
-.setThumbnail(LOGO_URL)
-.setFooter({ text: 'LYX RL • Secure Payments', iconURL: LOGO_URL });
-            return message.reply({ embeds: [embed] });
-        }
-
-        // SETUP RULES - FONT FIGO
-        if (command === 'setuprules' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const embed = new EmbedBuilder()
-.setTitle('📜 LYX RL • SERVER RULES')
-.setDescription('**Regolamento Ufficiale LYX RL**\n\n🔴 **1. Rispetto** - No insulti, razzismo, doxxing\n🔴 **2. No Spam** - No flood, no pubblicità non autorizzata\n🔴 **3. No Scam** - Ban immediato per truffe\n🔴 **4. Ticket Only** - Supporto solo via ticket\n🔴 **5. Pagamenti** - Solo metodi ufficiali LTC/PayPal\n\n⚠️ **La violazione comporta ban permanente senza avviso**')
-.setImage(BANNER_URL)
-.setColor(LYX_RED)
-.setFooter({ text: 'LYX RL • Rules', iconURL: LOGO_URL });
-
-            const select = new StringSelectMenuBuilder()
-.setCustomId('rules_category')
-.setPlaceholder('📋 Seleziona categoria regole')
-.addOptions(
-                new StringSelectMenuOptionBuilder()
-.setLabel('Regole Generali')
-.setDescription('Regole base del server')
-.setValue('general')
-.setEmoji('📜'),
-                new StringSelectMenuOptionBuilder()
-.setLabel('Regole Chat')
-.setDescription('Comportamento in chat')
-.setValue('chat')
-.setEmoji('💬'),
-                new StringSelectMenuOptionBuilder()
-.setLabel('Termini di Servizio')
-.setDescription('Regole acquisti e pagamenti')
-.setValue('tos')
-.setEmoji('🛒')
-            );
-
-            const row = new ActionRowBuilder().addComponents(select);
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        // SETUP TICKET LUXURY CON 5 LINGUE
-        if (command === 'setupticket' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const embed = new EmbedBuilder()
-.setTitle('`🎫 SUPPORTO PREMIUM LYX RL`')
-.setDescription('*Apri un ticket privato e il nostro staff ti risponderà entro 5 minuti.*\n\n🇮🇹 `Italiano` - Supporto 24/7\n🇬🇧 `English` - 24/7 Support\n🇫🇷 `Français` - Support 24/7\n🇵🇹 `Português` - Suporte 24/7\n🇩🇪 `Deutsch` - 24/7 Support\n\n⚡ ||Tempo medio risposta: 45 sec||\n💎 ||Supporto prioritario per verificati||')
-.setImage(BANNER_URL)
-.setColor(LYX_RED)
-.setFooter({ text: 'LYX RL • Premium Support 24/7', iconURL: LOGO_URL });
-
-            const select = new StringSelectMenuBuilder()
-.setCustomId('ticket_panel')
-.setPlaceholder('🌍 Seleziona lingua / Select language / Sélectionner langue')
-.addOptions(
-                new StringSelectMenuOptionBuilder()
-.setLabel('Italiano')
-.setDescription('Supporto in Italiano 24/7')
-.setValue('it')
-.setEmoji('🇮🇹'),
-                new StringSelectMenuOptionBuilder()
-.setLabel('English')
-.setDescription('24/7 English Support')
-.setValue('en')
-.setEmoji('🇬🇧'),
-                new StringSelectMenuOptionBuilder()
-.setLabel('Français')
-.setDescription('Support Français 24/7')
-.setValue('fr')
-.setEmoji('🇫🇷'),
-                new StringSelectMenuOptionBuilder()
-.setLabel('Português')
-.setDescription('Suporte Português 24/7')
-.setValue('pt')
-.setEmoji('🇵🇹'),
-                new StringSelectMenuOptionBuilder()
-.setLabel('Deutsch')
-.setDescription('24/7 Deutscher Support')
-.setValue('de')
-.setEmoji('🇩🇪')
-            );
-
-            const row = new ActionRowBuilder().addComponents(select);
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        // VERIFY SEMPLICE - SOLO BOTTONE, NO MODAL
-        if (command === 'setupverify' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const embed = new EmbedBuilder()
-.setTitle('🔐 VERIFICA LYX RL')
-.setDescription('**Sistema di Verifica Ufficiale**\n\nClicca il pulsante qui sotto per verificarti e accedere a tutti i canali.\n\n✨ **Vantaggi Membri Verificati:**\n• Accesso completo a tutti i canali\n• Ticket di supporto prioritari\n• Offerte e sconti esclusivi\n• Ruolo Verified permanente')
-.setImage(BANNER_URL)
-.setColor(LYX_RED)
-.setFooter({ text: 'LYX RL Verification System', iconURL: LOGO_URL });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('verify_simple').setLabel('VERIFICA').setStyle(ButtonStyle.Danger).setEmoji('🔐')
-            );
-
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        if (command === 'setuprecensione' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const embed = new EmbedBuilder()
-.setTitle('⭐ FEEDBACK CLIENTI LYX RL')
-.setDescription('**La tua opinione conta**\n\nHai acquistato? Lascia una recensione pubblica.\n\n💎 **Ogni recensione = codice sconto**')
-.setImage(BANNER_URL)
-.setColor(GOLD)
-.setFooter({ text: 'LYX RL • Customer Reviews', iconURL: LOGO_URL });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('review_button').setLabel('LASCIA RECENSIONE').setStyle(ButtonStyle.Primary).setEmoji('⭐')
-            );
-
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        if (command === 'setupstats' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const online = message.guild.members.cache.filter(m => m.presence?.status === 'online').size;
-            const embed = new EmbedBuilder()
-.setTitle('📊 LYX RL LIVE STATS')
-.setDescription('**Statistiche in tempo reale**')
+        const ticketEmbed = new EmbedBuilder()
+.setColor('#FF0000')
+.setTitle(`Ticket - ${categoryNames[category]}`)
 .addFields(
-                { name: '👥 Membri', value: `\`\`${message.guild.memberCount}\`\`\``, inline: true },
-                { name: '🟢 Online', value: `\`\`\`${online}\`\`\``, inline: true },
-                { name: '💎 Boost', value: `\`\`\`Level ${message.guild.premiumTier}\`\`\``, inline: true },
-                { name: '⚡ Ping', value: `\`\`\`${client.ws.ping}ms\`\`\``, inline: true }
-            )
-.setThumbnail(LOGO_URL)
-.setImage(BANNER_URL)
-.setColor(LYX_RED)
+        { name: 'User', value: `${interaction.user}`, inline: true },
+        { name: 'Category', value: categoryNames[category], inline: true },
+        { name: 'Service', value: service, inline: true },
+        { name: 'Issue', value: issue }
+      )
+.setFooter({ text: SERVER_NAME })
 .setTimestamp();
-            await message.channel.send({ embeds: [embed] });
-            return message.delete();
-        }
 
-        if (command === 'setupwebsite' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const embed = new EmbedBuilder()
-.setTitle('🌐 LYX RL OFFICIAL STORE')
-.setDescription('**Sito Ufficiale**\n\n🛒 Catalogo completo\n💰 Prezzi aggiornati\n📦 Consegna istantanea\n🔒 Pagamenti sicuri')
-.setImage(BANNER_URL)
-.setColor('#5865F2')
-.setFooter({ text: 'LYX RL • Official Store', iconURL: LOGO_URL });
+        const closeButton = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('close_ticket').setLabel('Close Ticket').setStyle(ButtonStyle.Danger).setEmoji('🔒')
+        );
 
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setLabel('VAI AL SITO').setStyle(ButtonStyle.Link).setURL(WEBSITE_URL).setEmoji('🌐')
-            );
-
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-        // SETUP STOCK - FIXATO
-        if (command === 'setupstock' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            const embed = new EmbedBuilder()
-.setTitle('`📦 LYX RL PREMIUM STOCK`')
-.setDescription('*Prodotti Disponibili Ora. Ma molti altri prodotti sul sito*\n\n🎮 `Spotify Premium` - €5 Lifetime | Stock: 0\n📺 `Netflix ` - €3.00 Lifetime | Stock: 50\n🎬 `Disney+` - €3.00 Lifetime | Stock: 1500\n🎥 `YOUTUBE LIFETIME` - €3,50 Lifetime | Stock: 70\n\n✅ `Consegna Istantanea`\n🔒 `Garanzia Lifetime`\n💳 `Pagamenti: LTC/PayPal`')
-.setImage(BANNER_URL)
-.setColor(LYX_RED)
-.setFooter({ text: '*LYX RL • Premium Stock*', iconURL: LOGO_URL });
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setLabel('ACQUISTA ORA').setStyle(ButtonStyle.Link).setURL(WEBSITE_URL).setEmoji('🛒')
-            );
-
-            await message.channel.send({ embeds: [embed], components: [row] });
-            return message.delete();
-        }
-
-    } catch (error) {
-        console.error(`Errore ${command}:`, error);
+        await ticketChannel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, embeds: [ticketEmbed], components: [closeButton] });
+        await interaction.editReply({ content: `Ticket created: ${ticketChannel} 🩸` });
+      }
     }
+
+    if (interaction.isButton() && interaction.customId === 'close_ticket') {
+      await interaction.reply({ content: 'Ticket will close in 5 seconds...' });
+      setTimeout(() => interaction.channel.delete(), 5000);
+    }
+
+  } catch (error) {
+    console.error('ERROR:', error);
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply({ content: `Errore: ${error.message} 💔` });
+    } else {
+      await interaction.reply({ content: `Errore: ${error.message} 💔`, ephemeral: true });
+    }
+  }
 });
 
-// --- INTERAZIONI LUXURY ---
-client.on('interactionCreate', async interaction => {
-    try {
-        // MENU TICKET - PRIMA SCELTA LINGUA
-        if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_panel') {
-            const lang = interaction.values[0];
-            const langData = LANGS[lang];
+client.on('messageCreate', async message => {
+  if (message.author.bot ||!message.channel.name.startsWith('ticket-')) return;
+  if (!message.channel.topic?.includes('manual')) return;
 
-            const categorySelect = new StringSelectMenuBuilder()
-.setCustomId(`ticket_category_${lang}`)
-.setPlaceholder(langData.select_category)
-.addOptions(
-                new StringSelectMenuOptionBuilder()
-.setLabel(langData.categories.support.label)
-.setDescription(langData.categories.support.desc)
-.setValue('support')
-.setEmoji('💬'),
-                new StringSelectMenuOptionBuilder()
-.setLabel(langData.categories.order.label)
-.setDescription(langData.categories.order.desc)
-.setValue('order')
-.setEmoji('📦'),
-                new StringSelectMenuOptionBuilder()
-.setLabel(langData.categories.not_delivered.label)
-.setDescription(langData.categories.not_delivered.desc)
-.setValue('not_delivered')
-.setEmoji('❌'),
-                new StringSelectMenuOptionBuilder()
-.setLabel(langData.categories.refund.label)
-.setDescription(langData.categories.refund.desc)
-.setValue('refund')
-.setEmoji('💰')
-            );
-
-            const row = new ActionRowBuilder().addComponents(categorySelect);
-
-            const embed = new EmbedBuilder()
-.setTitle(langData.select_category)
-.setDescription(`**${langData.name}** ${langData.flag}`)
-.setColor(LYX_RED);
-
-            return await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+  const isNumeric = /^\d+$/.test(message.content.trim());
+  if (isNumeric) {
+    const keyCode = message.content.trim();
+    if (KEYS[keyCode] &&!KEYS[keyCode].used) {
+      await message.react('⏳');
+      const messages = await message.channel.messages.fetch({ limit: 10 });
+      const ticketEmbedMsg = messages.find(m => m.embeds.length > 0 && m.author.id === client.user.id);
+      if (ticketEmbedMsg) {
+        const result = await redeemKeyAuto(keyCode, message.author, message.channel, ticketEmbedMsg);
+        if (result.success) {
+          await message.react('✅');
+          await message.reply('✅ **Key riscattata!** Controlla i DM per le credenziali 🩸');
         }
-
-        // MENU TICKET - SECONDA SCELTA CATEGORIA + CREA TICKET
-        if (interaction.isStringSelectMenu() && interaction.customId.startsWith('ticket_category_')) {
-            await interaction.deferReply({ ephemeral: true });
-            const lang = interaction.customId.split('_')[2];
-            const category = interaction.values[0];
-            const langData = LANGS[lang];
-
-            const ticketName = `ticket-${interaction.user.username}`.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 90);
-            const existing = interaction.guild.channels.cache.find(ch => ch.name === ticketName);
-            if (existing) return interaction.editReply({ content: `❌ **${lang === 'it'? 'Hai già un ticket aperto!' : lang === 'en'? 'You already have an open ticket!' : lang === 'fr'? 'Vous avez déjà un ticket ouvert!' : lang === 'pt'? 'Você já tem um ticket aberto!' : 'Du hast bereits ein offenes Ticket!'}` });
-
-            const channel = await interaction.guild.channels.create({
-                name: ticketName,
-                type: ChannelType.GuildText,
-                topic: `Ticket LYX RL | User: ${interaction.user.tag} | Lang: ${lang.toUpperCase()} | Cat: ${category}`,
-                permissionOverwrites: [
-                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles, PermissionsBitField.Flags.ReadMessageHistory] },
-                    { id: STAFF_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages, PermissionsBitField.Flags.ManageChannels] }
-                ]
-            });
-
-            const ticketEmbed = new EmbedBuilder()
-.setTitle(langData.ticket_title)
-.setDescription(`**${langData.welcome} ${interaction.user}** 👋\n\n**${langData.category}:** ${langData.categories[category].label}\n**${langData.language}:** ${langData.name} ${langData.flag}\n\n📝 **${langData.describe}**\n🖼️ **${langData.attach}**\n⏱️ **${langData.response_time}**\n\n*${langData.staff_reply}*`)
-.setColor(LYX_RED)
-.setThumbnail(LOGO_URL)
-.setFooter({ text: 'LYX RL • Premium Support 24/7', iconURL: LOGO_URL })
-.setTimestamp();
-
-            const buttonRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('close_ticket').setLabel(langData.close_ticket).setStyle(ButtonStyle.Danger).setEmoji('🔒'),
-                new ButtonBuilder().setCustomId(`send_ltc_${lang}`).setLabel(langData.send_ltc).setStyle(ButtonStyle.Primary).setEmoji('💎')
-            );
-
-            await channel.send({ content: `${interaction.user} | <@&${STAFF_ROLE_ID}>`, embeds: [ticketEmbed], components: [buttonRow] });
-            return interaction.editReply({ content: `✅ **Ticket creato!**\n${channel}` });
-        }
-
-        // BOTTONI
-        if (interaction.isButton()) {
-            // VERIFY SEMPLICE - DA RUOLO SUBITO, NO MODAL
-            if (interaction.customId === 'verify_simple') {
-                await interaction.deferReply({ ephemeral: true });
-                const role = interaction.guild.roles.cache.get(VERIFIED_ROLE_ID);
-                if (!role) return interaction.editReply({ content: '❌ **Errore:** Ruolo non trovato!' });
-
-                if (interaction.member.roles.cache.has(VERIFIED_ROLE_ID)) {
-                    return interaction.editReply({ content: '✅ **Sei già verificato!**' });
-                }
-
-                await interaction.member.roles.add(role);
-
-                const logs = interaction.guild.channels.cache.find(ch => ch.name === LOGS_CHANNEL_NAME);
-                if (logs) {
-                    const logEmbed = new EmbedBuilder()
-.setTitle('✅ NUOVA VERIFICA')
-.setDescription(`**Utente:** ${interaction.user.tag}\n**ID:** ${interaction.user.id}`)
-.setColor('#00ff00')
-.setThumbnail(interaction.user.displayAvatarURL())
-.setTimestamp();
-                    logs.send({ embeds: [logEmbed] });
-                }
-
-                const successEmbed = new EmbedBuilder()
-.setTitle('✅ VERIFICATO')
-.setDescription(`**Benvenuto ${interaction.user.username}!**\n\n💎 **Status:** Verificato\n🚀 **Accesso:** Completo\n\n*Goditi LYX RL!*`)
-.setColor(LYX_RED)
-.setThumbnail(LOGO_URL);
-
-                return interaction.editReply({ embeds: [successEmbed] });
-            }
-
-            // BOTTONE LTC DENTRO TICKET
-            if (interaction.customId.startsWith('send_ltc_')) {
-                const embed = new EmbedBuilder()
-.setTitle('💎 LYX RL • LTC WALLET')
-.setDescription(`**Indirizzo Ufficiale per Pagamenti**\n\`\`\`${LTC_ADDRESS}\`\`\`\n⚠️ **Invia solo LTC** - Altri token verranno persi\n\n📸 **Dopo il pagamento, invia screenshot della transazione**`)
-.setColor('#345D9D')
-.setThumbnail(LOGO_URL)
-.setFooter({ text: 'LYX RL • Secure Payments', iconURL: LOGO_URL });
-
-                return await interaction.reply({ embeds: [embed], ephemeral: false });
-            }
-
-            if (interaction.customId === 'review_button') {
-                const modal = new ModalBuilder().setCustomId('review_modal').setTitle('Recensione LYX RL');
-                const starsInput = new TextInputBuilder().setCustomId('stars_input').setLabel('VALUTAZIONE (1-5)').setStyle(TextInputStyle.Short).setRequired(true).setPlaceholder('5').setMaxLength(1);
-                const textInput = new TextInputBuilder().setCustomId('text_input').setLabel('LA TUA RECENSIONE').setStyle(TextInputStyle.Paragraph).setRequired(true).setPlaceholder('Servizio perfetto...').setMaxLength(1000);
-                const linkInput = new TextInputBuilder().setCustomId('link_input').setLabel('SCREENSHOT (Opzionale)').setStyle(TextInputStyle.Short).setRequired(false);
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(starsInput),
-                    new ActionRowBuilder().addComponents(textInput),
-                    new ActionRowBuilder().addComponents(linkInput)
-                );
-                return await interaction.showModal(modal);
-            }
-
-            if (interaction.customId === 'close_ticket') {
-                await interaction.reply({ content: '🔒 **Ticket in chiusura...**\nIl canale verrà eliminato tra 5 secondi' });
-                setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
-            }
-        }
-
-        // MODAL
-        if (interaction.isModalSubmit()) {
-            await interaction.deferReply({ ephemeral: true });
-
-            if (interaction.customId === 'review_modal') {
-                const stars = parseInt(interaction.fields.getTextInputValue('stars_input'));
-                const text = interaction.fields.getTextInputValue('text_input');
-                const link = interaction.fields.getTextInputValue('link_input') || 'Nessuna prova';
-
-                if (isNaN(stars) || stars < 1 || stars > 5) return interaction.editReply({ content: '❌ **Errore:** Stelle da 1 a 5' });
-
-                const vouchesChannel = interaction.guild.channels.cache.find(ch => ch.name === VOUCHES_CHANNEL_NAME);
-                if (!vouchesChannel) return interaction.editReply({ content: '❌ **Errore:** Canale vouches non trovato' });
-
-                const reviewEmbed = new EmbedBuilder()
-.setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
-.setTitle(`${'⭐'.repeat(stars)}${'☆'.repeat(5-stars)} ${stars}/5 STELLE`)
-.setDescription(text)
-.addFields({ name: '📎 Prova', value: link })
-.setColor(GOLD)
-.setThumbnail(LOGO_URL)
-.setFooter({ text: 'LYX RL • Verified Review', iconURL: LOGO_URL })
-.setTimestamp();
-
-                await vouchesChannel.send({ embeds: [reviewEmbed] });
-
-                const successEmbed = new EmbedBuilder()
-.setTitle('✅ RECENSIONE PUBBLICATA')
-.setDescription('**Grazie per il feedback!**\n\n💚 Il team LYX RL apprezza\n🎁 Controlla i DM per sconti')
-.setColor(GOLD)
-.setThumbnail(LOGO_URL);
-
-                return interaction.editReply({ embeds: [successEmbed] });
-            }
-        }
-
-        // MENU REGOLE
-        if (interaction.isStringSelectMenu() && interaction.customId === 'rules_category') {
-            const category = interaction.values[0];
-            const rules = {
-                general: '📜 **REGOLE GENERALI**\n\n1. Rispetto per tutti i membri\n2. No contenuti NSFW/18+\n3. No spam o flood\n4. No pubblicità non autorizzata\n5. Italiano/Inglese in chat pubblica',
-                chat: '💬 **REGOLE CHAT**\n\n1. No caps lock eccessivo\n2. No off-topic nei canali\n3. No discussioni politiche/religiose\n4. Usa i canali appropriati\n5. Rispetta lo staff e le decisioni',
-                tos: '🛒 **TERMINI DI SERVIZIO**\n\n1. Nessun rimborso dopo consegna\n2. Garanzia solo se documentata\n3. Pagamenti solo via metodi ufficiali\n4. Ban per chargeback/frode\n5. Account personali, no sharing/resell'
-            };
-
-            const embed = new EmbedBuilder()
-.setTitle('📜 LYX RL RULES')
-.setDescription(rules[category] || 'Seleziona categoria')
-.setColor(LYX_RED)
-.setFooter({ text: 'LYX RL • Rules', iconURL: LOGO_URL });
-
-            return await interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-
-    } catch (error) {
-        console.error('Errore interazione:', error);
-        if (interaction.deferred) await interaction.editReply({ content: '❌ **Errore**, riprova' }).catch(() => {});
-        else await interaction.reply({ content: '❌ **Errore**, riprova', ephemeral: true }).catch(() => {});
+      }
     }
+  }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+app.post('/api/crea-key', async (req, res) => {
+  try {
+    console.log('=== ORDINE DA SELLAUTH ===', req.body);
+
+    const { id, email, product, product_id, quantity } = req.body;
+
+    // CHIAMA RESELLME
+    const resellmeResponse = await axios.post(RESELLME_WEBHOOK, req.body, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 15000
+    });
+
+    console.log('Risposta ResellMe:', resellmeResponse.data);
+
+    const credentials = resellmeResponse.data.delivered ||
+                       resellmeResponse.data.message ||
+                       resellmeResponse.data.credentials ||
+                       resellmeResponse.data.data;
+
+    if (!credentials || JSON.stringify(credentials) === '{}') {
+      console.log('ResellMe non ha inviato credenziali');
+      return res.status(500).json({ success: false, error: 'Fornitore non ha consegnato il prodotto' });
+    }
+
+    let newKey;
+    do {
+      newKey = Math.floor(100000 + Math.random() * 900000).toString();
+    } while (KEYS[newKey]);
+
+    KEYS[newKey] = {
+      orderid: id || 'N/A',
+      email: email || 'N/A',
+      product: product || 'Prodotto Sconosciuto',
+      product_id: product_id || product,
+      quantity: quantity || 1,
+      payment: 'SellAuth',
+      credentials_raw: credentials,
+      used: false
+    };
+    saveKeys();
+
+    await new OrderLog({
+      key: newKey,
+      orderid: id || 'N/A',
+      email: email || 'N/A',
+      product: product || 'Prodotto Sconosciuto',
+      quantity: quantity || 1,
+      payment: 'SellAuth',
+      used: false
+    }).save();
+
+    res.json({
+      success: true,
+      deliverable: newKey,
+      message: `Grazie! Apri ticket Manual Delivery su Discord e incolla: ${newKey}`
+    });
+
+  } catch (err) {
+    console.log('ERRORE RESELLME:', err.response?.data || err.message);
+    res.status(500).json({
+      success: false,
+      error: 'Errore fornitore. Contatta supporto.'
+    });
+  }
+});
+
+app.get('/', (req, res) => res.send('LYX RL Services Online 🔴'));
+app.listen(PORT, () => console.log(`Server on port ${PORT}`));
+client.login(DISCORD_TOKEN);
